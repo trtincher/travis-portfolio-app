@@ -1,0 +1,15 @@
+.home-grid-container {
+  background-color: #dda15e;
+  display: grid;
+  /* grid-template-columns: repeat(2, 1fr); */
+  grid-gap: 20px;
+  padding: 20px;
+}
+
+.home-grid-item {
+  background-color: #fefae0;
+  padding: 20px;
+  border-radius: 8px;
+  color: #283618;
+  /* border: 5px solid #dda15e; */
+}

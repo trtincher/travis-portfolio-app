@@ -1,0 +1,121 @@
+{
+  "name": "Travis Tincher",
+  "position": "Full Stack Software Engineer",
+  "summary": "Software engineer with a focus on end-to-end full stack feature work. 4+ years of experience designing, building, and shipping well-tested, maintainable features for customer-facing applications. Dedicated to crafting elegantly designed, maintainable, performant software. Thrives in close collaborative team environments.",
+  "email": "tincher.travis@gmail.com",
+  "phone": "(903) 574-1520",
+  "linkedin": "linkedin.com/in/travis-tincher",
+  "github": "github.com/trtincher",
+  "experience": [
+    {
+      "company": "Alix",
+      "position": "Senior Software Engineer III",
+      "startDate": "MAY 2023",
+      "endDate": "December 2024",
+      "summary": [
+        "Streamlining front-end development and enforced coding standards by creating a reusable component library, automating form generation from GraphQL schemas, and integrating Apollo Codegen, improving code maintainability and reducing new feature development effort by at least 25%.",
+        "Devised an innovative approach to a document management system by building a front-end service layer directly on top of AWS S3 buckets to provide users with a seamless experience for uploading, viewing, and organizing documents along with built-in versioning."
+      ]
+    },
+    {
+      "company": "Contracting",
+      "position": "Full Stack Development",
+      "startDate": "FEBRUARY 2023",
+      "endDate": "PRESENT",
+      "summary": [
+        "Upgraded two consumer-facing legacy Rails applications to Rails 7, ensuring thorough testing, robust error logging, and comprehensive documentation to maintain high coding standards and prevent regressions.",
+        "Developed educational web applications for Texas elementary schools using React Native, TypeScript, and GraphQL, including interactive games to teach children about the environment and ecology."
+      ]
+    },
+    {
+      "company": "JMJ Financial",
+      "position": "Software Engineer II",
+      "startDate": "JANUARY 2021",
+      "endDate": "JANUARY 2023",
+      "summary": [
+        "Developed and implemented a comprehensive backend solution to automate the creation, signing, and management of legally binding documents, integrating APIs for Encompass and HelloSign. Designed data models and state management logic to track document progress, enabling seamless coordination between client systems and loan officers.",
+        "Reduced a multi-hour manual document processing workflow into an automated system by building API endpoints, internal Rails-based UI, and webhook listeners to manage document lifecycle events. Improved operational efficiency with only two manual review steps, significantly streamlining both internal and customer-facing processes."
+      ]
+    },
+    {
+      "company": "JMJ Financial",
+      "position": "Software Engineer I",
+      "startDate": "FEBRUARY 2020",
+      "endDate": "JANUARY 2021",
+      "summary": [
+        "Created admin forms and views with Ruby on Rails for visualization and maintenance of user data for the purpose of processing home loans.",
+        "Built interactive customer forms to create a digital version of the Uniform Residential Loan Application (Form 1003)."
+      ]
+    },
+    {
+      "company": "Ctrl Alt Elite",
+      "position": "Software Engineering Contractor",
+      "startDate": "SEPTEMBER 2020",
+      "endDate": "FEBRUARY 2021",
+      "summary": [
+        "Developed an application for a mobile bike mechanic, which included key features such as a Calendly for scheduling, a Google Maps for location mapping."
+      ]
+    }
+  ],
+  "education": [
+    {
+      "institution": "General Assembly",
+      "degree": "Software Engineering and Development",
+      "startDate": "",
+      "endDate": "August 2020",
+      "summary": [
+        "Earned 1st place in General Assembly’s Alumni Social Impact Hackathon.",
+        "Projects:",
+        "myBallot WA: Collaborated three UX/UI Designers and four Software Engineers over three days to fully deploy a mobile first React.js responsive web application ballot builder created to simplify and streamline the voting process.",
+        "DnD Battle Tracker: A dungeons and dragons full stack application with a PostgresQL db, Ruby on Rails backend, and React.js frontend for maintaining a character and tracking statuses during battle.",
+        "Forte: A full stack application with Mongo db, express backend, and React.js to create related teacher and student models with full CRUD functionality.",
+        "Brewery mApp: A responsive React.js web application utilizing a third party API to pull brewery information and Mapbox to visualize the visited breweries."
+      ]
+    },
+    {
+      "institution": "Emory University",
+      "degree": "Master of Theological Studies",
+      "startDate": "",
+      "endDate": "May 2015"
+    },
+    {
+      "institution": "Texas A&M",
+      "degree": "Bachelor of Arts in Philosophy",
+      "startDate": "",
+      "endDate": "August 2012"
+    }
+  ],
+  "skills": {
+    "Languages": [
+      "Typescript",
+      "Javascript",
+      "Ruby",
+      "Java",
+      "Python"
+    ],
+    "Backend": [
+      "Ruby on Rails",
+      "Apollo GraphQL",
+      "SQL (Postgres, Active Record)",
+      "Data Model & API Design"
+    ],
+    "Frontend": [
+      "ReactJS",
+      "React Native",
+      "NestJS"
+    ],
+    "DevOps": [
+      "AWS Web Services"
+    ]
+  },
+  "hobbies": [
+    "Songwriting and Playing Guitar",
+    "Board Games",
+    "Cooking",
+    "Reading (Fantasy, SciFi, Manga)",
+    "Rock Climbing",
+    "Drawing (pen, graphite, colored ink)",
+    "Brewing Beer",
+    "Dungeons and Dragons"
+  ]
+}
