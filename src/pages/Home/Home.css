@@ -136,10 +136,9 @@
 
 .info-block {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr 1fr;
+  /* flex-direction: column; */
   gap: 2rem;
-  /* background-color: var(--secondary-color); */
-  /* Random color */
   padding: 2rem;
   border-radius: 8px;
 }
@@ -147,8 +146,6 @@
 /* Skills Block */
 
 .skills-block {
-  /* background-color: var(--secondary-color); */
-  /* Random color */
   padding: 20px;
   border-radius: 8px;
   color: var(--text-color-light);
@@ -165,7 +162,6 @@
 .skills-category-list {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
   list-style-type: none;
   padding: 0;
 }
@@ -256,14 +252,8 @@
   margin: 1rem 0;
 }
 
-/* Mobile Styles */
-@media (max-width: var(--breakpoint-md)) {
-  .banner-block {
-    flex-direction: column;
-    /* Stack elements vertically */
-    height: auto;
-    /* Adjust height to fit content */
-  }
+/* Tablet Styles */
+@media only screen and (max-width: 1024px) {
 
   .summary-block,
   .info-block {
@@ -271,5 +261,15 @@
     /* Stack elements vertically */
     grid-template-columns: 1fr;
     /* For grid-based layouts */
+  }
+}
+
+/* Mobile Styles */
+@media only screen and (max-width: 768px) {
+  .banner-block {
+    flex-direction: column;
+    /* Stack elements vertically */
+    height: auto;
+    /* Adjust height to fit content */
   }
 }
