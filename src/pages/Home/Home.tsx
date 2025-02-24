@@ -15,8 +15,10 @@ import profileImage from '../../assets/Travis-Headshot.jpg';
 // Import SVGs
 import LinkedInIcon from '../../assets/linkedin.svg';
 import GitHubIcon from '../../assets/github.svg';
-import EmailIcon from '../../assets/mail.svg';
 import Download from '../../assets/download.svg';
+
+// Import PDF
+import resumePDF from '../../assets/Travis-Resume.pdf';
 
 
 const Home: React.FC = () => {
@@ -40,19 +42,16 @@ const Home: React.FC = () => {
               Learn, Create, Innovate
             </p>
             <div className="contact-block">
-              <button className="contact-button">
+              <a href={resumePDF} target="_blank" className="contact-button">
                 <img src={Download} alt="Download" className="contact-icon"/>
                 <p className="cv-button-text">Resume</p>
-              </button>
-              <button className="contact-button">
+              </a>
+              <a href={resumeData.linkedin} target="_blank" className="contact-button">
                 <img src={LinkedInIcon} alt="LinkedIn" />
-              </button>
-              <button className="contact-button">
+              </a>
+              <a href={resumeData.github} target="_blank" className="contact-button">
                 <img src={GitHubIcon} alt="GitHub" />
-              </button>
-              <button className="contact-button">
-                <img src={EmailIcon} alt="Email" />
-              </button>
+              </a>
             </div>
           </div>
 
