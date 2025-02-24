@@ -1,37 +1,48 @@
 {
   "name": "Travis Tincher",
   "position": "Full Stack Software Engineer",
-  "summary": "Software engineer with a focus on end-to-end full stack feature work. 4+ years of experience designing, building, and shipping well-tested, maintainable features for customer-facing applications. Dedicated to crafting elegantly designed, maintainable, performant software. Thrives in close collaborative team environments.",
+  "summary": "I am a software engineer driven by collaboration and curiosity. My focus is on end-to-end full stack feature work. I design, build, and ship well-tested, maintainable features prioritizing the end user experience. As a team member or leader I aim to empower teammates. Fundamentally, every contribution I make is driven by creative innovation.",
   "email": "tincher.travis@gmail.com",
   "phone": "(903) 574-1520",
-  "linkedin": "linkedin.com/in/travis-tincher",
-  "github": "github.com/trtincher",
+  "linkedin": "https://www.linkedin.com/in/travis-tincher/",
+  "github": "https://github.com/trtincher",
   "experience": [
     {
-      "company": "Alix",
-      "position": "Senior Software Engineer III",
-      "startDate": "MAY 2023",
-      "endDate": "December 2024",
+      "company": "DeepSeas",
+      "position": "Software Engineer - Contractor",
+      "startDate": "February 2023",
+      "endDate": "Present",
       "summary": [
-        "Streamlining front-end development and enforced coding standards by creating a reusable component library, automating form generation from GraphQL schemas, and integrating Apollo Codegen, improving code maintainability and reducing new feature development effort by at least 25%.",
-        "Devised an innovative approach to a document management system by building a front-end service layer directly on top of AWS S3 buckets to provide users with a seamless experience for uploading, viewing, and organizing documents along with built-in versioning."
+        "Contribute to both Ruby on Rails and NestJS projects at Deep Seas Development, an AWS-focused engineering firm, ensuring performant, scalable, and cost-effective cloud applications.",
+        "Lead a collaborative upgrade of a legacy Rails application from Ruby 2/Rails 5 to Ruby 3/Rails 7, enhancing security, maintainability, and alignment with modern industry standards.",
+        "Develop and maintain scalable backend services in NestJS using TypeScript and PostgreSQL, ensuring high-quality code and efficient data management across applications."
       ]
     },
     {
-      "company": "Contracting",
-      "position": "Full Stack Development",
-      "startDate": "FEBRUARY 2023",
-      "endDate": "PRESENT",
+      "company": "Alix",
+      "position": "Software Engineer - Full-time",
+      "startDate": "May 2023",
+      "endDate": "December 2024",
       "summary": [
-        "Upgraded two consumer-facing legacy Rails applications to Rails 7, ensuring thorough testing, robust error logging, and comprehensive documentation to maintain high coding standards and prevent regressions.",
-        "Developed educational web applications for Texas elementary schools using React Native, TypeScript, and GraphQL, including interactive games to teach children about the environment and ecology."
+        "Devised an innovative approach to automate sorting of large sets of PDF documents using a combination of AWS S3, AWS Textract, and OpenAI combined with internal business logic exposing the tool through a NodeJS / GraphQL API interface. This reduced the manual processing time by 80%, saving the company an average of 15 hours per client.",
+        "Streamlined front-end development and enforced coding standards by creating a reusable custom React component library, automating form UI generation from GraphQL schemas, and integrating Apollo Codegen for Typescript automation, improving code maintainability and reducing new feature development effort by at least 25%.",
+        "Collaborated closely with UI/UX Designers to execute streamlined customer facing features in a React client with an emphasis on cross-browser compliant HTML & CSS."
+      ]
+    },
+    {
+      "company": "TouchTo",
+      "position": "Remote Software Engineer - Contractor",
+      "startDate": "February 2023",
+      "endDate": "May 2023",
+      "summary": [
+        "Developed educational web applications for Texas elementary schools using React Native, TypeScript, and GraphQL, including interactive games to teach children about the environment and ecology. Worked closely with accessibility experts for a fully compliant UX experience."
       ]
     },
     {
       "company": "JMJ Financial",
       "position": "Software Engineer II",
-      "startDate": "JANUARY 2021",
-      "endDate": "JANUARY 2023",
+      "startDate": "January 2021",
+      "endDate": "January 2023",
       "summary": [
         "Developed and implemented a comprehensive backend solution to automate the creation, signing, and management of legally binding documents, integrating APIs for Encompass and HelloSign. Designed data models and state management logic to track document progress, enabling seamless coordination between client systems and loan officers.",
         "Reduced a multi-hour manual document processing workflow into an automated system by building API endpoints, internal Rails-based UI, and webhook listeners to manage document lifecycle events. Improved operational efficiency with only two manual review steps, significantly streamlining both internal and customer-facing processes."
@@ -40,8 +51,8 @@
     {
       "company": "JMJ Financial",
       "position": "Software Engineer I",
-      "startDate": "FEBRUARY 2020",
-      "endDate": "JANUARY 2021",
+      "startDate": "February 2020",
+      "endDate": "January 2021",
       "summary": [
         "Created admin forms and views with Ruby on Rails for visualization and maintenance of user data for the purpose of processing home loans.",
         "Built interactive customer forms to create a digital version of the Uniform Residential Loan Application (Form 1003)."
@@ -50,8 +61,8 @@
     {
       "company": "Ctrl Alt Elite",
       "position": "Software Engineering Contractor",
-      "startDate": "SEPTEMBER 2020",
-      "endDate": "FEBRUARY 2021",
+      "startDate": "September 2020",
+      "endDate": "February 2021",
       "summary": [
         "Developed an application for a mobile bike mechanic, which included key features such as a Calendly for scheduling, a Google Maps for location mapping."
       ]
@@ -105,7 +116,12 @@
       "NestJS"
     ],
     "DevOps": [
-      "AWS Web Services"
+      "AWS Web Services",
+      "Heroku",
+      "Docker",
+      "CI/CD",
+      "Terraform",
+      "Firebase"
     ]
   },
   "hobbies": [
