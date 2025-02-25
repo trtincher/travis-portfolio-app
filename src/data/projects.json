@@ -1,0 +1,50 @@
+[
+  {
+    "title": "Houston CycleFix",
+    "description": "A mobile first responsive web application implementing automated booking for mobile bicycle repair, maintenance, and building. Created an 80% greater efficiency in workflow for the owner so he could spend more time working and less time with booking and emailing prospective customers. Employs an inline Calendly widget which powers auto booking, and serves as CMS. This solution allowed the owner 100% customizability and flexibility with his schedule. Applies EmailJS to power custom contact form. This allows for a highly personalized user experience. Uses React/CSS/Sass/HTML5 to create views/Utilizes GitHub for version control and branch testing before implementation.",
+    "image": "https://i.imgur.com/9EUS0x2.png",
+    "url": "https://houstoncyclefix.com/",
+    "github": "https://github.com/KevinKapka/Bike-Repair-Booker",
+    "software": "React, CSS, Sass, HTML5, Calendly, EmailJS"
+  },
+  {
+    "title": "myBallot WA",
+    "description": "React/SCSS/HTML/Javascript Mobile ballot builder created to simplify and streamline the voting process for all voters. Was created with a team of four designers and four developers at a three day competitive remote Hackathon hosted by General Assembly where it won first place by judges vote. My contributions were: (1) Build out the state management structure. This relied on the useContext hook with prop drilling minimized to two child components at most. (2) Create the referendum and candidate modal pop-ups and their content. This included, dynamically displaying card data based on api calls, then populating the final ballot page based on the users choices. Utilized GitHub for version control and branch testing before implementation on the master branch.",
+    "image": "https://i.imgur.com/dZWaykf.png",
+    "url": "https://myballot.netlify.app/",
+    "github": "https://github.com/trtincher/myBallot",
+    "software": "React, SCSS, HTML, JavaScript, useContext"
+  },
+  {
+    "title": "Brewery mApp",
+    "description": "A map app to graph and collect your brewery experiences. Used React/Bootstrap/HTML5 to create views. Employed Axios to call in external data from https://www.openbrewerydb.org/. Utilized Git for version control and branch testing before implementation on the master branch.",
+    "image": "https://imgur.com/FhzHszf.png",
+    "url": "http://brewery-mapp.surge.sh/",
+    "github": "https://github.com/trtincher/Project2-BreweryApp",
+    "software": "React, Bootstrap, HTML5, Axios"
+  },
+  {
+    "title": "Forte",
+    "description": "Created wireframes using Miro group boards. Built backend with Express/Mongoose/MongoDB to create related teacher and student models with full CRUD functionality. Used HTML5/SCSS/React/Axios to create the views. Utilized Git for version control and remote team organization. Team members used branches and pull requests to the main branch to maintain an orderly project workflow.",
+    "image": "https://i.imgur.com/UovIIGH.png",
+    "url": "http://fortefound.surge.sh/",
+    "github": "https://github.com/trtincher/P3-GroupLab-Frontend/tree/dev",
+    "software": "Express, Mongoose, MongoDB, HTML5, SCSS, React, Axios"
+  },
+  {
+    "title": "Familiar",
+    "description": "Character management app for Dungeons and Dragons 5th ed. Created wireframes using Miro boards. Implemented React/Style Components/HTML5 to create views. Built backend with Javascript/Node.js/Express/Mongoose/MongoDB to create user and character models with full CRUD functionality. Employed Axios to call in external data from https://www.dnd5eapi.co/. Utilized Git for version control and branch testing before implementation on the master branch.",
+    "image": "https://i.imgur.com/eBnY2jk.png",
+    "url": "http://familiar-react-app.surge.sh/",
+    "github": "https://github.com/trtincher/Project4-Frontend",
+    "software": "React, Style Components, HTML5, Node.js, Express, Mongoose, MongoDB, Axios"
+  },
+  {
+    "title": "Portfolio",
+    "description": "Used HTML5 and CSS to create the portfolio layout and visuals. Employed Javascript and jQuery to create a dynamic portfolio card display and links. Utilized Git for version control and branch testing before implementation on the master branch.",
+    "image": "https://i.imgur.com/9xvlAgc.png",
+    "url": "http://travis-tincher-portfolio.surge.sh/",
+    "github": "https://github.com/trtincher/Portfolio-TravisTincher",
+    "software": "HTML5, CSS, JavaScript, jQuery"
+  }
+]

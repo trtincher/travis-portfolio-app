@@ -1,0 +1,10 @@
+[
+  {
+    "title": "myBallot WA",
+    "description": "React/SCSS/HTML/Javascript Mobile ballot builder created to simplify and streamline the voting process for all voters. Was created with a team of four designers and four developers at a three day competitive remote Hackathon hosted by General Assembly where it won first place by judges vote. My contributions were: (1) Build out the state management structure. This relied on the useContext hook with prop drilling minimized to two child components at most. (2) Create the referendum and candidate modal pop-ups and their content. This included, dynamically displaying card data based on api calls, then populating the final ballot page based on the users choices. Utilized GitHub for version control and branch testing before implementation on the master branch.",
+    "image": "https://i.imgur.com/dZWaykf.png",
+    "url": "https://myballot.netlify.app/",
+    "github": "https://github.com/trtincher/myBallot",
+    "software": "React, SCSS, HTML, JavaScript, useContext"
+  }
+]

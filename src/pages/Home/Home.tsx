@@ -19,6 +19,7 @@ import Download from '../../assets/download.svg';
 
 // Import PDF
 import resumePDF from '../../assets/Travis-Resume.pdf';
+import PortDeck from "../../commonents/PortDeck/PortDeck";
 
 
 const Home: React.FC = () => {
@@ -98,7 +99,12 @@ const Home: React.FC = () => {
             </div>
           </div>
         </div>
-
+        <div className="portfolio-block">
+          <h2 className="portfolio-title">Portfolio</h2>
+          <div className="portfolio-list">
+            <PortDeck />
+          </div>
+        </div>
     </div>
   );
 }

@@ -1,0 +1,107 @@
+@import "../../config/breakpoints.scss";
+@import "../../config/colors.scss";
+
+.Card {
+  background: $secondary;
+  width: 100%;
+  margin: 80px auto;
+  padding: 20px 20px;
+  color: $appWhite;
+  text-align: left;
+  filter: drop-shadow(0px 3px 10px rgba(0, 0, 0, 0.2));
+
+  @media only screen and (min-width: $desktop-lg) {
+    width: $desktop-lg - 40px;
+  }
+
+  .content_wrapper {
+    @media only screen and (min-width: $tablet) {
+      display: flex;
+      max-width: 800px;
+      margin: auto;
+    }
+  }
+
+  img {
+    width: 90%;
+    filter: drop-shadow(0px 1px 10px rgba(0, 0, 0, 0.15));
+
+    @media only screen and (min-width: $tablet) {
+      width: 55%;
+    }
+  }
+
+  .card_body {
+    @media only screen and (min-width: $tablet) {
+      width: 30%;
+      padding: 0 3%;
+      display: flex;
+      flex-direction: column;
+      // justify-content: space-between;
+    }
+  }
+
+  h1 {
+    font-size: 25px;
+    font-weight: 800;
+    margin: 0;
+    padding-top: 5px;
+
+    @media only screen and (min-width: $tablet) {
+      font-size: 38px;
+    }
+  }
+
+  .card_sub {
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    margin: 0;
+    padding-top: 5px;
+  }
+
+  .card_article {
+    width: 90%;
+    font-weight: light;
+    font-size: 12px;
+    padding-top: 10px;
+
+    @media only screen and (min-width: $tablet) {
+      font-size: 1em;
+      width: 100%;
+    }
+
+    span {
+      font-weight: 800;
+    }
+  }
+
+  .card_button {
+    background: $appBlack;
+    width: 196px;
+    height: 33px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    filter: drop-shadow(0px 1px 10px rgba(0, 0, 0, 0.15));
+    margin-top: 5px;
+
+    .github-btn {
+      background: #fde34d;
+    }
+
+    @media only screen and (min-width: $tablet) {
+      margin-bottom: 10px;
+    }
+
+    a {
+      text-decoration: none;
+      color: $appWhite;
+      text-transform: uppercase;
+      font-size: 0.8em;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+  }
+}
