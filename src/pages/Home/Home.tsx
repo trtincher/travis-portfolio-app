@@ -19,7 +19,7 @@ import Download from '../../assets/download.svg';
 
 // Import PDF
 import resumePDF from '../../assets/Travis-Resume.pdf';
-import PortDeck from "../../commonents/PortDeck/PortDeck";
+// import PortDeck from "../../commonents/PortDeck/PortDeck";
 
 
 const Home: React.FC = () => {
