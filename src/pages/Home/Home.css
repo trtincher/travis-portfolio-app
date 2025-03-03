@@ -252,6 +252,14 @@
   margin: 1rem 0;
 }
 
+/* Project Block */
+.project-block {
+  padding: 20px;
+  border-radius: 8px;
+  background-color: var(--secondary-color);
+  color: var(--text-color-dark);
+}
+
 /* Tablet Styles */
 @media only screen and (max-width: 1024px) {
 

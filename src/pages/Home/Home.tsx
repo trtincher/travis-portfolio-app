@@ -99,12 +99,14 @@ const Home: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="portfolio-block">
-          <h2 className="portfolio-title">Portfolio</h2>
-          <div className="portfolio-list">
+        {/* 
+        This is not ready
+        <div className="project-block">
+          <h2 className="project-title">Projects</h2>
+          <div className="project-list">
             <PortDeck />
           </div>
-        </div>
+        </div> */}
     </div>
   );
 }
