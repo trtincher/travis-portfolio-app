@@ -10,7 +10,7 @@ interface CardProps {
 }
 
 function Card({ title, description, image, url, github, software }: CardProps) {
-  const isPlayable = url.startsWith("/toys/");
+  const isPlayable = url.startsWith("/demos/");
 
   return (
     <article className="project-card">

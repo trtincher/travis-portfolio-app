@@ -3,7 +3,7 @@
     "title": "The Step",
     "description": "3D tactical grid on a phone: elevation and ramps, line of sight, area shapes, multi-tap moves and attacks.",
     "image": "step.jpg",
-    "url": "/toys/step/",
+    "url": "/demos/step/",
     "github": "",
     "software": "three.js · touch"
   },
@@ -11,7 +11,7 @@
     "title": "The Loam",
     "description": "Map editor and system-free map book: draw a map with glyphs, place party, foes and objects, export encounters.",
     "image": "loam.jpg",
-    "url": "/toys/loam/",
+    "url": "/demos/loam/",
     "github": "",
     "software": "three.js · map editor"
   },
@@ -19,7 +19,7 @@
     "title": "The Summoning",
     "description": "Character creation wizard: intent, class, abilities, equipment, with a step rail that shows how far you are.",
     "image": "summoning.jpg",
-    "url": "/toys/summoning/",
+    "url": "/demos/summoning/",
     "github": "",
     "software": "vanilla JS"
   },
@@ -27,7 +27,7 @@
     "title": "The Effigy",
     "description": "Character sheet editor: start from a random stranger, every row is a tap, the cost of a class computed live.",
     "image": "effigy.jpg",
-    "url": "/toys/effigy/",
+    "url": "/demos/effigy/",
     "github": "",
     "software": "vanilla JS"
   },
@@ -35,7 +35,7 @@
     "title": "The Table",
     "description": "d20 pinball: plunger, flippers, bumpers, three balls on a tilted plane.",
     "image": "table.jpg",
-    "url": "/toys/table/",
+    "url": "/demos/table/",
     "github": "",
     "software": "three.js · cannon-es"
   },
@@ -43,7 +43,7 @@
     "title": "The Cast",
     "description": "Spear throw: drag to cock, release, it sticks where it lands, three throws a round.",
     "image": "cast.jpg",
-    "url": "/toys/cast/",
+    "url": "/demos/cast/",
     "github": "",
     "software": "three.js · cannon-es"
   },
@@ -51,7 +51,7 @@
     "title": "The Bowl",
     "description": "Dice bowling: flick a d6, d12 or d20 up the lane; a 1 busts, gutters count.",
     "image": "bowl.jpg",
-    "url": "/toys/bowl/",
+    "url": "/demos/bowl/",
     "github": "",
     "software": "three.js · cannon-es"
   },
@@ -59,7 +59,7 @@
     "title": "The Throw",
     "description": "Weapon flick at a spinning target: pull and release, centre hits pay.",
     "image": "throw.jpg",
-    "url": "/toys/throw/",
+    "url": "/demos/throw/",
     "github": "",
     "software": "three.js"
   },

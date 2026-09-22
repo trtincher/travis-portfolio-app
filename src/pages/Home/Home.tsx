@@ -110,7 +110,7 @@ const Home: React.FC = () => {
 
         <section className="section" id="projects" aria-labelledby="projects-heading">
           <div className="wrap">
-            <h2 className="section-heading" id="projects-heading">Projects and toys</h2>
+            <h2 className="section-heading" id="projects-heading">Projects</h2>
             <p className="section-intro">{projectsIntro}</p>
             <PortDeck />
           </div>
