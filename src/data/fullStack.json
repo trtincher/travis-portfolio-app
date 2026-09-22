@@ -166,5 +166,6 @@
     "Drawing (pen, graphite, colored ink)",
     "Brewing Beer",
     "Dungeons and Dragons"
-  ]
+  ],
+  "tagline": "Rails backends, React frontends, and the AI agents that now help build both."
 }

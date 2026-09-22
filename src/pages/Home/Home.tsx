@@ -38,9 +38,9 @@ const Home: React.FC = () => {
 
         <div className="summary-block">
           <div className="about-me">
-            <h2 className="about-me-title">Full Stack Software Developer</h2>
+            <h2 className="about-me-title">{resumeData.position}</h2>
             <p className="about-me-job-title">
-              Learn, Create, Innovate
+              {resumeData.tagline}
             </p>
             <div className="contact-block">
               <a href={resumePDF} target="_blank" className="contact-button">
