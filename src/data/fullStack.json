@@ -2,14 +2,14 @@
   "name": "Travis Tincher",
   "position": "Senior Software Engineer — Ruby on Rails · full stack · AI agents",
   "tagline": "Rails backends, React frontends, and the AI agents that now help build both.",
-  "summary": "Full-stack engineer, six years in production, with Ruby on Rails and PostgreSQL at the core of the backend work and a record of shipping third-party and LLM integrations into regulated workflows. For the past year I have also built and operated an autonomous, agent-driven development system, so I know where AI tooling helps, where it lies, and how to test it.",
+  "summary": "Full-stack engineer with over six years of experience building and maintaining Ruby on Rails servers and React TypeScript clients, with PostgreSQL behind most of it. Shipped 3rd party and LLM integrations into regulated workflows in mortgage, estate settlement, and healthcare. Spent the past year building and operating an agent-driven development system with human review gates, which is where most of my understanding of how to verify AI output comes from.",
   "selectedWork": {
     "title": "Autonomous agent dev system",
     "period": "2025 – present",
     "bullets": [
-      "Built and run a two-mode agent system for shipping software. Live mode: an orchestrator session plans the work, briefs parallel worker agents in isolated git worktrees, routes the model per task, and lands their output as a stacked PR graph with one human gate. Background mode: a queue-driven runner executes one headless LLM session per task from a pinned checkout for overnight and batch work.",
-      "Twelve months in continuous operation: about 3,500 tasks and 640+ merged PRs across multiple repos, run fully autonomously with strategic human review gates; a multiplayer game beta shipped through it.",
-      "Wrote the operating rules from what broke: a self-modification race led to a pinned checkout; unreviewable PRs led to small reviewable PRs per wave of work; gates that lied led to per-task verify commands and a headed browser pass after UI work."
+      "Built and operate a two-mode agent system for shipping software. In live mode an orchestrator session plans the work, briefs parallel worker agents in isolated git worktrees, chooses the model for each task, and lands the results as a stacked set of pull requests with one human review gate. In background mode a queue-driven runner executes one headless LLM session per task from a pinned checkout for overnight and batch work.",
+      "Over twelve months of continuous operation it has run about 3,500 tasks and merged 640+ pull requests across multiple repos, most of them fully autonomously with human review at strategic gates, and a multiplayer game beta shipped through it.",
+      "Quality comes from checks the system runs on itself. I cut the test suites to a small budget per module after coverage chasing began eating a large portion of each agent run's capacity, and moved that weight onto verification per task. Every task carries its own verify criteria that have to pass before its commit lands, and UI work is confirmed visually by an agent in a headed browser before I look. That shift has raised the quality of what reaches me more than anything else."
     ]
   },
   "email": "tincher.travis@gmail.com",
@@ -34,8 +34,8 @@
       "endDate": "January 2026",
       "summary": [
         "Built clinician-facing React / TypeScript apps for an AI smart-hospital platform (virtual nursing and observation console, admin and configuration tooling, patient-room bedside interface) deployed at NYU Langone, Johns Hopkins, Mayo Clinic and 30+ health systems.",
-        "Shipped real-time features over WebSocket and WebRTC (two-way audio/video, live sensor and location events) and surfaced AI alerts and predictions to nurses with explicit uncertainty and failure states, so a wrong signal could not pass for a right one.",
-        "Owned frontend testing and release verification (Jest, introduced Playwright end-to-end, browser validation before release, post-release checks in live hospitals); built to the design system with bedside readability and accessibility as hard requirements."
+        "Shipped real-time features over WebSocket and WebRTC (two-way audio/video, live sensor and location events) and surfaced AI alerts and predictions to nurses with explicit uncertainty and failure states so they could tell a confident prediction from a weak one.",
+        "Owned frontend testing and release verification (Jest, introduced Playwright, browser checks before and after release in live hospitals); built to the design system with accessibility as a hard requirement."
       ]
     },
     {
@@ -45,8 +45,8 @@
       "endDate": "December 2024",
       "summary": [
         "Designed and shipped an LLM document pipeline (S3 + Textract + OpenAI) that classifies and auto-sorts hundreds of scanned estate documents per client, with batching for production volume and a prompt-engineered table-of-contents output. Cut manual processing 80%, about 15 hours per client.",
-        "Moved the team from bottlenecked manual QA to a weekly release cadence behind feature flags: integrated the flag system, rebuilt the Jira automation, wrote and taught the process. Defects fell 70% and hotfixes nearly disappeared.",
-        "Built the React / TypeScript client and admin portal from scratch with a custom component library and design system; Apollo GraphQL codegen cut interface maintenance 65% and form-generator scripts cut admin form build time 90%.",
+        "Moved the team from bottlenecked manual QA to weekly feature-flagged releases: integrated the flag system, rebuilt the Jira automation, taught the process. Defects fell about 70% and hotfixes became rare.",
+        "Built the React / TypeScript client and admin portal from scratch with a design system; GraphQL codegen and form generators cut interface and admin-form work 65% and 90%.",
         "Delivered a Box document-center integration in two weeks by driving the team to Box's embedded UI components; designed the executor/beneficiary permission split and the client-side Box auth flow. Added S3 versioning and admin soft-delete so the Care Team could recover any document."
       ]
     },
