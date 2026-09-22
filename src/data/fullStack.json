@@ -1,70 +1,90 @@
 {
   "name": "Travis Tincher",
-  "position": "Full Stack Software Engineer",
-  "summary": "I am a software engineer driven by collaboration and curiosity. My focus is on end-to-end full stack feature work. I design, build, and ship well-tested, maintainable features prioritizing the end user experience. As a team member or leader I aim to empower teammates. Fundamentally, every contribution I make is driven by creative innovation.",
+  "position": "Senior Software Engineer — Ruby on Rails · full stack · AI agents",
+  "summary": "Full-stack engineer, six years in production, with Ruby on Rails and PostgreSQL at the core of the backend work and a record of shipping third-party and LLM integrations into regulated workflows. For the past year I have also built and operated an autonomous, agent-driven development system, so I know where AI tooling helps, where it lies, and how to test it.",
   "email": "tincher.travis@gmail.com",
   "phone": "(903) 574-1520",
   "linkedin": "https://www.linkedin.com/in/travis-tincher/",
   "github": "https://github.com/trtincher",
   "experience": [
     {
-      "company": "DeepSeas",
-      "position": "Software Engineer - Contractor",
-      "startDate": "February 2023",
-      "endDate": "Present",
+      "company": "Deep Seas Development",
+      "position": "Ruby on Rails Engineer — Contract",
+      "startDate": "January 2025",
+      "endDate": "May 2025 · April 2026 – Present",
       "summary": [
-        "Contribute to both Ruby on Rails and NestJS projects at Deep Seas Development, an AWS-focused engineering firm, ensuring performant, scalable, and cost-effective cloud applications.",
-        "Lead a collaborative upgrade of a legacy Rails application from Ruby 2/Rails 5 to Ruby 3/Rails 7, enhancing security, maintainability, and alignment with modern industry standards.",
-        "Develop and maintain scalable backend services in NestJS using TypeScript and PostgreSQL, ensuring high-quality code and efficient data management across applications."
+        "Upgraded two consumer-facing legacy Rails applications from Ruby 2 / Rails 5 to Ruby 3 / Rails 7, adding test coverage, structured error logging, and documentation so the upgrades shipped without regressions.",
+        "Build and maintain NestJS / TypeScript services on PostgreSQL alongside the Rails work; CI/CD on GitHub Actions, AWS infrastructure via Terraform."
+      ]
+    },
+    {
+      "company": "Artisight",
+      "position": "Senior Frontend Software Engineer",
+      "startDate": "May 2025",
+      "endDate": "January 2026",
+      "summary": [
+        "Built clinician-facing React / TypeScript apps for an AI smart-hospital platform (virtual nursing and observation console, admin and configuration tooling, patient-room bedside interface) deployed at NYU Langone, Johns Hopkins, Mayo Clinic and 30+ health systems.",
+        "Shipped real-time features over WebSocket and WebRTC (two-way audio/video, live sensor and location events) and surfaced AI alerts and predictions to nurses with explicit uncertainty and failure states, so a wrong signal could not pass for a right one.",
+        "Owned frontend testing and release verification (Jest, introduced Playwright end-to-end, browser validation before release, post-release checks in live hospitals); built to the design system with bedside readability and accessibility as hard requirements."
       ]
     },
     {
       "company": "Alix",
-      "position": "Software Engineer - Full-time",
+      "position": "Founding Full Stack Engineer",
       "startDate": "May 2023",
       "endDate": "December 2024",
       "summary": [
-        "Devised an innovative approach to automate sorting of large sets of PDF documents using a combination of AWS S3, AWS Textract, and OpenAI combined with internal business logic exposing the tool through a NodeJS / GraphQL API interface. This reduced the manual processing time by 80%, saving the company an average of 15 hours per client.",
-        "Streamlined front-end development and enforced coding standards by creating a reusable custom React component library, automating form UI generation from GraphQL schemas, and integrating Apollo Codegen for Typescript automation, improving code maintainability and reducing new feature development effort by at least 25%.",
-        "Collaborated closely with UI/UX Designers to execute streamlined customer facing features in a React client with an emphasis on cross-browser compliant HTML & CSS."
+        "Designed and shipped an LLM document pipeline (S3 + Textract + OpenAI) that classifies and auto-sorts hundreds of scanned estate documents per client, with batching for production volume and a prompt-engineered table-of-contents output. Cut manual processing 80%, about 15 hours per client.",
+        "Moved the team from bottlenecked manual QA to a weekly release cadence behind feature flags: integrated the flag system, rebuilt the Jira automation, wrote and taught the process. Defects fell 70% and hotfixes nearly disappeared.",
+        "Built the React / TypeScript client and admin portal from scratch with a custom component library and design system; Apollo GraphQL codegen cut interface maintenance 65% and form-generator scripts cut admin form build time 90%.",
+        "Delivered a Box document-center integration in two weeks by driving the team to Box's embedded UI components; designed the executor/beneficiary permission split and the client-side Box auth flow. Added S3 versioning and admin soft-delete so the Care Team could recover any document."
       ]
     },
     {
       "company": "TouchTo",
-      "position": "Remote Software Engineer - Contractor",
+      "position": "Software Engineer — Contract",
       "startDate": "February 2023",
       "endDate": "May 2023",
       "summary": [
-        "Developed educational web applications for Texas elementary schools using React Native, TypeScript, and GraphQL, including interactive games to teach children about the environment and ecology. Worked closely with accessibility experts for a fully compliant UX experience."
+        "Developed educational web applications for Texas elementary schools using React Native, TypeScript, and GraphQL, including interactive games to teach children about the environment and ecology, built with accessibility experts for a fully compliant UX."
       ]
     },
     {
       "company": "JMJ Financial",
-      "position": "Software Engineer II",
-      "startDate": "January 2021",
+      "position": "Ruby on Rails Engineer, backend lead",
+      "startDate": "February 2022",
       "endDate": "January 2023",
       "summary": [
-        "Developed and implemented a comprehensive backend solution to automate the creation, signing, and management of legally binding documents, integrating APIs for Encompass and HelloSign. Designed data models and state management logic to track document progress, enabling seamless coordination between client systems and loan officers.",
-        "Reduced a multi-hour manual document processing workflow into an automated system by building API endpoints, internal Rails-based UI, and webhook listeners to manage document lifecycle events. Improved operational efficiency with only two manual review steps, significantly streamlining both internal and customer-facing processes."
+        "Architected the Rails / PostgreSQL backend for a mortgage platform on AWS: ECS web and worker services, Active Job on SQS, RDS in high availability, encrypted S3 via Active Storage, Sentry and CloudWatch.",
+        "Built the Mortgage Disclosures feature end to end: Encompass and HelloSign integrations, an aasm state machine per document, webhooks for the event-driven approval flow, and Rails views for loan officers. A multi-hour manual process became a background job with two review touchpoints (~60% less manual overhead).",
+        "Designed the REST APIs serving three client portals; shipped Auth.net (payments) and PDFtron (PDF) integrations; led small projects including an external contractor; standardized inline docs with Yard and Rubocop."
       ]
     },
     {
       "company": "JMJ Financial",
-      "position": "Software Engineer I",
-      "startDate": "February 2020",
-      "endDate": "January 2021",
+      "position": "Full Stack Ruby on Rails Engineer",
+      "startDate": "February 2021",
+      "endDate": "January 2022",
       "summary": [
-        "Created admin forms and views with Ruby on Rails for visualization and maintenance of user data for the purpose of processing home loans.",
-        "Built interactive customer forms to create a digital version of the Uniform Residential Loan Application (Form 1003)."
+        "Built the Rails API layer and page-data hydration serving the React / TypeScript client and internal Rails admin pages; shipped the digital Uniform Residential Loan Application (Form 1003) end to end; owned CI/CD in GitHub workflows and pre-launch QA."
       ]
     },
     {
       "company": "Ctrl Alt Elite",
-      "position": "Software Engineering Contractor",
+      "position": "Software Engineer — Freelance",
       "startDate": "September 2020",
       "endDate": "February 2021",
       "summary": [
-        "Developed an application for a mobile bike mechanic, which included key features such as a Calendly for scheduling, a Google Maps for location mapping."
+        "Developed a responsive React web application for a mobile bike mechanic with Calendly scheduling and Google Maps location features."
+      ]
+    },
+    {
+      "company": "Independent — AI agent systems",
+      "position": "Builder and operator",
+      "startDate": "2025",
+      "endDate": "Present",
+      "summary": [
+        "Built and operate an autonomous development system on GitHub Issues and Projects: a queue, a runner executing one LLM session per task, a phase/wave/task hierarchy with PR-graph automation, and verification gates that decide whether agent output merges. About 3,500 tasks and 640+ merged PRs across six repos, with documented failure modes; a live multiplayer game beta shipped through it."
       ]
     }
   ],
@@ -98,30 +118,43 @@
   ],
   "skills": {
     "Languages": [
-      "Typescript",
-      "Javascript",
+      "TypeScript",
+      "JavaScript",
       "Ruby",
-      "Java",
+      "SQL",
       "Python"
     ],
     "Backend": [
-      "Ruby on Rails",
-      "Apollo GraphQL",
-      "SQL (Postgres, Active Record)",
-      "Data Model & API Design"
+      "Ruby on Rails 5–7",
+      "PostgreSQL",
+      "Active Job / SQS",
+      "REST",
+      "GraphQL",
+      "NestJS / Node.js",
+      "RSpec"
     ],
     "Frontend": [
-      "ReactJS",
+      "React",
       "React Native",
-      "NestJS"
+      "HTML / CSS",
+      "Tailwind",
+      "Rails views",
+      "Accessibility",
+      "Design systems"
+    ],
+    "AI agents": [
+      "LLM document pipelines (OpenAI, Claude)",
+      "Prompt engineering",
+      "Agent orchestration",
+      "Agent testing and evaluation"
     ],
     "DevOps": [
-      "AWS Web Services",
-      "Heroku",
-      "Docker",
-      "CI/CD",
+      "AWS (ECS, RDS, S3, SQS, Textract)",
       "Terraform",
-      "Firebase"
+      "GitHub Actions CI/CD",
+      "Docker",
+      "Sentry",
+      "Feature-flag deployments"
     ]
   },
   "hobbies": [
