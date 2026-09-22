@@ -1,3 +1,0 @@
-GLBs converted from Synty POLYGON assets are licensed for use in shipped
-games but may NOT be redistributed as source. If this repository becomes
-public, remove them first.
