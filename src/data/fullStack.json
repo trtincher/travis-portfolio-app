@@ -84,7 +84,8 @@
       "startDate": "2025",
       "endDate": "Present",
       "summary": [
-        "Built and operate an autonomous development system on GitHub Issues and Projects: a queue, a runner executing one LLM session per task, a phase/wave/task hierarchy with PR-graph automation, and verification gates that decide whether agent output merges. About 3,500 tasks and 640+ merged PRs across six repos, with documented failure modes; a live multiplayer game beta shipped through it."
+        "Built and run a two-mode agent system for shipping software. Live mode: an orchestrator session plans the work, briefs parallel worker agents in isolated git worktrees, routes the model per task, and lands their output as a stacked PR graph with one human gate. Background mode: a queue-driven runner executes one headless LLM session per task from a pinned checkout for overnight and batch work.",
+        "Twelve months in continuous operation: about 3,500 tasks and 640+ merged PRs across multiple repos, run fully autonomously with strategic human review gates; a multiplayer game beta shipped through it."
       ]
     }
   ],
