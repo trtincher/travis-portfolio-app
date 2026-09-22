@@ -1,7 +1,17 @@
 {
   "name": "Travis Tincher",
   "position": "Senior Software Engineer — Ruby on Rails · full stack · AI agents",
+  "tagline": "Rails backends, React frontends, and the AI agents that now help build both.",
   "summary": "Full-stack engineer, six years in production, with Ruby on Rails and PostgreSQL at the core of the backend work and a record of shipping third-party and LLM integrations into regulated workflows. For the past year I have also built and operated an autonomous, agent-driven development system, so I know where AI tooling helps, where it lies, and how to test it.",
+  "selectedWork": {
+    "title": "Autonomous agent dev system",
+    "period": "2025 – present",
+    "bullets": [
+      "Built and run a two-mode agent system for shipping software. Live mode: an orchestrator session plans the work, briefs parallel worker agents in isolated git worktrees, routes the model per task, and lands their output as a stacked PR graph with one human gate. Background mode: a queue-driven runner executes one headless LLM session per task from a pinned checkout for overnight and batch work.",
+      "Twelve months in continuous operation: about 3,500 tasks and 640+ merged PRs across multiple repos, run fully autonomously with strategic human review gates; a multiplayer game beta shipped through it.",
+      "Wrote the operating rules from what broke: a self-modification race led to a pinned checkout; unreviewable PRs led to small reviewable PRs per wave of work; gates that lied led to per-task verify commands and a headed browser pass after UI work."
+    ]
+  },
   "email": "tincher.travis@gmail.com",
   "phone": "(903) 574-1520",
   "linkedin": "https://www.linkedin.com/in/travis-tincher/",
@@ -76,15 +86,6 @@
       "endDate": "February 2021",
       "summary": [
         "Developed a responsive React web application for a mobile bike mechanic with Calendly scheduling and Google Maps location features."
-      ]
-    },
-    {
-      "company": "Independent — AI agent systems",
-      "position": "Builder and operator",
-      "startDate": "2025",
-      "endDate": "Present",
-      "summary": [
-        "Built and operate an autonomous development system on GitHub Issues and Projects: a queue, a runner executing one LLM session per task, a phase/wave/task hierarchy with PR-graph automation, and verification gates that decide whether agent output merges. About 3,500 tasks and 640+ merged PRs across six repos, with documented failure modes; a live multiplayer game beta shipped through it."
       ]
     }
   ],
@@ -166,6 +167,5 @@
     "Drawing (pen, graphite, colored ink)",
     "Brewing Beer",
     "Dungeons and Dragons"
-  ],
-  "tagline": "Rails backends, React frontends, and the AI agents that now help build both."
+  ]
 }

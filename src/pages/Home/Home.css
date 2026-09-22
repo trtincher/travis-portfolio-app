@@ -21,8 +21,8 @@
 }
 
 .hero-photo {
-  width: 120px;
-  height: 120px;
+  width: 148px;
+  height: 148px;
   flex: none;
   border-radius: 50%;
   object-fit: cover;
@@ -74,8 +74,8 @@
   }
 
   .hero-photo {
-    width: 160px;
-    height: 160px;
+    width: 208px;
+    height: 208px;
   }
 
   .hero-copy {
@@ -91,6 +91,8 @@
 
 .section {
   padding-block: var(--section-y);
+  /* Keep a section's heading clear of the sticky nav bar when linked to. */
+  scroll-margin-top: var(--nav-h);
 }
 
 .section + .section {
@@ -106,6 +108,8 @@
   border-bottom: 1px solid var(--rule);
   margin-bottom: var(--space-5);
 }
+
+/* One-line framing under a section heading. */
 
 /* ============ about ============ */
 
@@ -343,4 +347,9 @@
     justify-content: space-between;
     text-align: left;
   }
+}
+
+.exp-item--single {
+  padding-top: 0;
+  border-top: 0;
 }

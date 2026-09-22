@@ -1,0 +1,284 @@
+/* Nav — sticky olive-ink bar, with a right-hand side drawer on phones.
+   Tokens + base live in src/App.css. */
+
+:root {
+  --nav-h: 56px;
+}
+
+/* ============ sticky bar ============ */
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  /* One shade darker than the olive hero band so the two don't read as one
+     oversized block. */
+  background-color: var(--olive-ink);
+  color: var(--cream);
+  border-bottom: 1px solid rgba(254, 250, 224, 0.16);
+}
+
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  /* bar content + the 1px hairline == --nav-h exactly, so the sections'
+     scroll-margin-top lands their top edge flush under the bar. */
+  height: calc(var(--nav-h) - 1px);
+}
+
+.nav-brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  color: var(--cream);
+  font-size: var(--step-body);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* ============ desktop links ============ */
+
+.nav-desktop {
+  display: none;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.nav-links li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.nav-links li + li::before {
+  content: "\00b7";
+  color: rgba(254, 250, 224, 0.45);
+  line-height: 1;
+}
+
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding-inline: var(--space-2);
+  color: var(--cream);
+  font-size: var(--step-meta);
+  font-weight: 500;
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+}
+
+.nav-resume {
+  margin-left: var(--space-3);
+  padding-inline: var(--space-4);
+  border: 1px solid rgba(254, 250, 224, 0.55);
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+}
+
+/* ============ hamburger ============ */
+
+.nav-burger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--tap);
+  height: var(--tap);
+  margin-right: calc(var(--space-2) * -1);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background-color: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.nav-burger-bars,
+.nav-burger-bars::before,
+.nav-burger-bars::after {
+  display: block;
+  width: 22px;
+  height: 2px;
+  border-radius: 2px;
+  background-color: var(--cream);
+}
+
+.nav-burger-bars {
+  position: relative;
+}
+
+.nav-burger-bars::before,
+.nav-burger-bars::after {
+  content: "";
+  position: absolute;
+  left: 0;
+}
+
+.nav-burger-bars::before {
+  top: -7px;
+}
+
+.nav-burger-bars::after {
+  top: 7px;
+}
+
+/* ============ backdrop ============ */
+
+.nav-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  background-color: rgba(40, 54, 24, 0.55);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 200ms ease, visibility 0s linear 200ms;
+}
+
+.nav-backdrop.is-open {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 200ms ease, visibility 0s linear 0s;
+}
+
+/* ============ drawer ============ */
+
+.nav-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  width: 78vw;
+  max-width: 320px;
+  padding: var(--space-2) var(--space-4) var(--space-5);
+  background-color: var(--cream);
+  color: var(--olive-ink);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  transform: translateX(100%);
+  /* visibility keeps the closed drawer out of the tab order + AT tree */
+  visibility: hidden;
+  transition: transform 200ms ease, visibility 0s linear 200ms;
+}
+
+.nav-drawer.is-open {
+  transform: translateX(0);
+  visibility: visible;
+  transition: transform 200ms ease, visibility 0s linear 0s;
+}
+
+.nav-drawer-head {
+  display: flex;
+  justify-content: flex-end;
+  min-height: var(--nav-h);
+  align-items: center;
+}
+
+.nav-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--tap);
+  height: var(--tap);
+  margin-right: calc(var(--space-2) * -1);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background-color: transparent;
+  color: var(--olive-ink);
+  cursor: pointer;
+}
+
+.nav-close-mark {
+  font-size: 1.75rem;
+  line-height: 1;
+  font-weight: 400;
+}
+
+.nav-drawer-links {
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-drawer-links li {
+  border-top: 1px solid var(--rule);
+}
+
+.nav-drawer-link {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  color: var(--olive-ink);
+  font-size: var(--step-body);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* ============ desktop ============ */
+
+@media only screen and (min-width: 800px) {
+  :root {
+    --nav-h: 64px;
+  }
+
+  .nav-brand {
+    font-size: var(--step-lead);
+  }
+
+  .nav-desktop {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .nav-burger,
+  .nav-backdrop,
+  .nav-drawer {
+    display: none;
+  }
+}
+
+@media (hover: hover) {
+  .nav-brand:hover,
+  .nav-link:hover {
+    color: var(--sand-light);
+  }
+
+  .nav-resume:hover {
+    color: var(--cream);
+    border-color: var(--cream);
+    background-color: rgba(254, 250, 224, 0.12);
+  }
+
+  .nav-burger:hover .nav-burger-bars,
+  .nav-burger:hover .nav-burger-bars::before,
+  .nav-burger:hover .nav-burger-bars::after {
+    background-color: var(--sand-light);
+  }
+
+  .nav-drawer-link:hover,
+  .nav-close:hover {
+    color: var(--clay-strong);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-drawer,
+  .nav-drawer.is-open,
+  .nav-backdrop,
+  .nav-backdrop.is-open {
+    transition: none;
+  }
+}

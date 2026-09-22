@@ -7,6 +7,7 @@ import './Home.css';
 import resumeData from '../../data/fullStack.json';
 
 // Import Components
+import Nav from "../../components/Nav/Nav";
 import PortDeck from "../../components/PortDeck/PortDeck";
 
 // Import Images
@@ -22,9 +23,12 @@ import resumePDF from '../../assets/Travis-Resume.pdf';
 
 const skillGroups = Object.entries(resumeData.skills) as [string, string[]][];
 
+
 const Home: React.FC = () => {
   return (
-    <div className="home">
+    <div className="home" id="top">
+      <Nav />
+
       <header className="hero">
         <div className="wrap hero-inner">
           <img
@@ -78,6 +82,27 @@ const Home: React.FC = () => {
             <p className="about-text">{resumeData.summary}</p>
           </div>
         </section>
+
+        {resumeData.selectedWork && (
+          <section className="section" id="selected-work" aria-labelledby="selected-work-heading">
+            <div className="wrap">
+              <h2 className="section-heading" id="selected-work-heading">Selected work</h2>
+              <div className="exp-item exp-item--single">
+                <div className="exp-head">
+                  <div className="exp-id">
+                    <h3 className="exp-position">{resumeData.selectedWork.title}</h3>
+                  </div>
+                  <p className="exp-dates">{resumeData.selectedWork.period}</p>
+                </div>
+                <ul className="exp-bullets">
+                  {resumeData.selectedWork.bullets.map((line, i) => (
+                    <li key={i}>{line}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </section>
+        )}
 
         <section className="section" id="experience" aria-labelledby="experience-heading">
           <div className="wrap">

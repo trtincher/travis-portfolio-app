@@ -1,0 +1,1266 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>the Loam</title>
+
+<style>
+  :root {
+    --ink: #f2ede4;
+    --dim: #a6a093;
+    --panel: rgba(18, 20, 22, 0.82);
+    --edge: rgba(242, 237, 228, 0.16);
+    --on: rgba(196, 107, 255, 0.34);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: #14171a; color: var(--ink);
+    font: 15px/1.3 ui-sans-serif, -apple-system, system-ui, sans-serif;
+    user-select: none; -webkit-user-select: none;
+    overscroll-behavior: none;
+  }
+  canvas { display: block; touch-action: none; }
+
+  .hud { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
+  .hud > * { pointer-events: auto; }
+  [hidden] { display: none !important; }
+
+  .corner { position: absolute; display: flex; gap: 8px; align-items: center; }
+  .tl {
+    top: max(12px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left));
+    flex-direction: column; align-items: flex-start;
+  }
+  .tr {
+    top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right));
+    flex-direction: column; align-items: flex-end;
+  }
+  /* Every tool lives in one bottom stack that grows upward: the tool row at the
+     base, and above it whatever that tool wants — a brush size, or the drawer. */
+  .bl {
+    bottom: max(14px, env(safe-area-inset-bottom)); left: max(12px, env(safe-area-inset-left));
+    right: 72px; flex-direction: column; align-items: flex-start; gap: 8px;
+  }
+  .br { bottom: max(14px, env(safe-area-inset-bottom)); right: max(12px, env(safe-area-inset-right)); }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  /* The drawer is the one row that may be longer than the screen: it scrolls
+     sideways rather than wrapping into a wall of chips over the board. */
+  .drawer {
+    flex-wrap: nowrap; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px; scrollbar-width: none;
+  }
+  .drawer::-webkit-scrollbar { display: none; }
+  .drawer .chip { flex: 0 0 auto; }
+  .sep { width: 1px; height: 28px; background: var(--edge); flex: 0 0 auto; margin: 0 2px; }
+
+  button {
+    min-height: 48px; min-width: 48px; padding: 0 14px;
+    background: var(--panel); color: var(--ink);
+    border: 1px solid var(--edge); border-radius: 12px;
+    font: inherit; font-weight: 600; letter-spacing: 0.01em;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    touch-action: manipulation; cursor: pointer;
+  }
+  button:active { background: rgba(255, 209, 102, 0.22); }
+  button:disabled { opacity: 0.32; }
+  button .k { color: var(--dim); font-weight: 500; }
+  button[aria-pressed="true"] { background: var(--on); border-color: rgba(196, 107, 255, 0.6); }
+  .chip { min-height: 44px; padding: 0 10px; font-size: 14px; }
+  .chip.solid::after { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #ff8f86; margin-left: 6px; vertical-align: middle; }
+  .chip.danger[aria-pressed="true"] { background: rgba(232, 84, 74, 0.35); border-color: #ff8f86; }
+
+  .title {
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 12px;
+    padding: 8px 12px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  .title b { font-size: 15px; letter-spacing: 0.02em; }
+  .title span { display: block; color: var(--dim); font-size: 13px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .title span.bad { color: #ff8f86; }
+
+  #menu {
+    display: flex; flex-direction: column; gap: 6px; align-items: stretch;
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 12px;
+    padding: 6px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    width: min(280px, calc(100vw - 24px));
+  }
+  #menu button { background: transparent; border-color: transparent; }
+  #menu .mlab {
+    color: var(--dim); font-size: 12px; font-weight: 600; letter-spacing: 0.06em;
+    text-transform: uppercase; padding: 8px 10px 2px;
+    border-top: 1px solid var(--edge); margin-top: 4px;
+  }
+  #menu .mrow { display: flex; gap: 4px; }
+  #menu .mrow .chip { flex: 1; min-width: 0; padding: 0 8px; }
+  #menu .mslide { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 10px; }
+  #menu .mslide .k { color: var(--dim); font-size: 13px; font-weight: 500; width: 66px; }
+  #menu .mslide input { flex: 1; min-width: 100px; accent-color: #ffc247; }
+
+  #toast {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    bottom: calc(150px + env(safe-area-inset-bottom));
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 999px;
+    padding: 10px 18px; font-weight: 600; white-space: nowrap;
+    opacity: 0; transition: opacity 160ms ease; pointer-events: none;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  #toast.on { opacity: 1; }
+</style>
+
+<div class="hud">
+  <div class="corner tl">
+    <div class="title">
+      <b>the Loam</b>
+      <span id="readout">look</span>
+    </div>
+  </div>
+
+  <div class="corner tr">
+    <button id="menuBtn">&#9776;</button>
+    <div id="menu" hidden>
+      <div class="mlab" style="border-top:0;margin-top:0">base canvas</div>
+      <div class="mrow">
+        <button class="chip" data-terr="forest" aria-pressed="true">forest</button>
+        <button class="chip" data-terr="dungeon" aria-pressed="false">dungeon</button>
+      </div>
+      <div class="mrow">
+        <button class="chip" data-terr="building" aria-pressed="false">building</button>
+        <button class="chip" data-terr="streets" aria-pressed="false">streets</button>
+      </div>
+      <label class="mslide"><span class="k">obstacles</span><input id="densRange" type="range" min="0" max="100" value="45"></label>
+      <label class="mslide"><span class="k">hills</span><input id="hillRange" type="range" min="0" max="100" value="40"></label>
+      <label class="mslide"><span class="k">valleys</span><input id="valeRange" type="range" min="0" max="100" value="30"></label>
+      <button id="genBtn">new ground</button>
+      <div class="mlab">the table</div>
+      <button id="mendBtn">mend &mdash; reconnect stranded ground</button>
+      <button id="clearThingsBtn">clear every thing</button>
+      <button id="copyBtn">copy map as JSON</button>
+    </div>
+  </div>
+
+  <div class="corner br">
+    <button id="undoBtn" title="undo">&#8630;</button>
+  </div>
+
+  <div class="corner bl">
+    <div class="row" id="sizeRow" hidden>
+      <button class="chip" data-size="1" aria-pressed="true">1</button>
+      <button class="chip" data-size="3" aria-pressed="false">3&times;3</button>
+    </div>
+    <div class="row drawer" id="thingRow" hidden></div>
+    <div class="row" id="toolRow">
+      <button class="chip" data-tool="look" aria-pressed="true">look</button>
+      <button class="chip" data-tool="raise" aria-pressed="false">raise</button>
+      <button class="chip" data-tool="lower" aria-pressed="false">lower</button>
+      <button class="chip" data-tool="ramp" aria-pressed="false">ramp</button>
+      <button class="chip" data-tool="wall" aria-pressed="false">wall</button>
+      <button class="chip" data-tool="clear" aria-pressed="false">clear</button>
+      <button class="chip" data-tool="things" aria-pressed="false">things</button>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.169.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.169.0/examples/jsm/"
+} }
+</script>
+
+<script type="module">
+import * as THREE from 'three'
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+
+// ---------------------------------------------------------------- the board
+// Same six characters as the Step, so anything shaped here is a board the
+// Step already knows how to walk:
+//   .  low ground (0)   +  mid ground (1)   2  high ground (2)
+//   /  ramp 0→1 (0.5)   ^  ramp 1→2 (1.5)   #  wall (blocks feet, flight, sight)
+// Trees are no longer '#': they are THINGS — a second layer over the ground,
+// each with a cell, a kind and a facing. Solid things block like walls do.
+const N = 20
+const LEVEL_H = 0.85
+const MAX_ALT = 3
+const VIEW = 12
+const WALL_TOP = 3
+const SURF = { '.': 0, '/': 0.5, '+': 1, '^': 1.5, '2': 2, '#': 3 }
+const LV = ['.', '+', '2']
+const RAMP = ['/', '^']             // the ramp that climbs OUT of level 0, out of level 1
+const ORTHO = [[1, 0], [-1, 0], [0, 1], [0, -1]]
+
+let MAP = Array.from({ length: N }, () => '.'.repeat(N))
+let THINGS = []                     // { kind, x, z, rot }
+
+const cell = (x, z) => (x < 0 || z < 0 || x >= N || z >= N ? null : MAP[z][x])
+const surf = (x, z) => SURF[cell(x, z)] ?? 0
+const floorOf = (x, z) => Math.floor(surf(x, z))
+const yOf = (a) => a * LEVEL_H
+const world = (x, z) => new THREE.Vector3(x - (N - 1) / 2, 0, z - (N - 1) / 2)
+const key = (x, z) => `${x},${z}`
+const thingAt = (x, z) => THINGS.find((t) => t.x === x && t.z === z) || null
+const setCell = (x, z, ch) => { MAP[z] = MAP[z].slice(0, x) + ch + MAP[z].slice(x + 1) }
+
+// ------------------------------------------------------------------- scene
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' })
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
+renderer.shadowMap.enabled = true
+renderer.shadowMap.type = THREE.PCFSoftShadowMap
+document.body.appendChild(renderer.domElement)
+
+const scene = new THREE.Scene()
+scene.background = new THREE.Color(0x14171a)
+scene.fog = new THREE.Fog(0x14171a, 20, 60)
+
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100)
+const FOCUS = new THREE.Vector3(0, 0.25, 0)
+
+scene.add(new THREE.HemisphereLight(0xbfd4ff, 0x2a2620, 0.85))
+const sun = new THREE.DirectionalLight(0xfff1d6, 1.05)
+sun.position.set(6, 12, 4)
+sun.castShadow = true
+sun.shadow.mapSize.set(2048, 2048)
+sun.shadow.camera.left = -14
+sun.shadow.camera.right = 14
+sun.shadow.camera.top = 14
+sun.shadow.camera.bottom = -14
+sun.shadow.camera.far = 44
+sun.shadow.bias = -0.0012
+scene.add(sun)
+
+// ------------------------------------------------------------------ ground
+// One palette per ground. Forest's '#' used to be a tree; now that trees are
+// things, a wall painted into a forest is stone.
+const PALETTES = {
+  forest:   { '.': 0x35492f, '/': 0x4f6039, '+': 0x5c7040, '^': 0x74804c, '2': 0x8b8f5c, '#': 0x4a4f52 },
+  dungeon:  { '.': 0x453f3a, '/': 0x524b44, '+': 0x5e564e, '^': 0x6a6157, '2': 0x776d60, '#': 0x211d1a },
+  building: { '.': 0x5d5142, '/': 0x6a5d4b, '+': 0x776852, '^': 0x83745b, '2': 0x8f7f64, '#': 0x362f2b },
+  streets:  { '.': 0x484c50, '/': 0x585d61, '+': 0x63686c, '^': 0x70757a, '2': 0x7e8388, '#': 0x22262d },
+}
+let SKIN = 'forest'
+const jitter = (hex) => new THREE.Color(hex).multiplyScalar(0.93 + Math.random() * 0.14)
+
+// A ramp is a real slope: the low edge at its level, the high edge one up,
+// facing whichever neighbour it climbs to. Built once pointing +x; turned per cell.
+function wedgeGeometry(yBot, yLo, yHi) {
+  const h = 0.47
+  const P = {
+    b0: [-h, yBot, -h], b1: [h, yBot, -h], b2: [h, yBot, h], b3: [-h, yBot, h],
+    t0: [-h, yLo, -h], t1: [h, yHi, -h], t2: [h, yHi, h], t3: [-h, yLo, h],
+  }
+  const tris = []
+  const quad = (a, b, c, d) => tris.push(...P[a], ...P[b], ...P[c], ...P[a], ...P[c], ...P[d])
+  quad('t0', 't3', 't2', 't1')   // top (sloped)
+  quad('b0', 'b1', 'b2', 'b3')   // bottom
+  quad('b0', 't0', 't1', 'b1')   // -z side
+  quad('b3', 'b2', 't2', 't3')   // +z side
+  quad('b1', 't1', 't2', 'b2')   // +x end (high)
+  quad('b0', 'b3', 't3', 't0')   // -x end (low)
+  const g = new THREE.BufferGeometry()
+  g.setAttribute('position', new THREE.Float32BufferAttribute(tris, 3))
+  g.computeVertexNormals()
+  return g
+}
+const FACING = { '1,0': 0, '0,1': -Math.PI / 2, '-1,0': Math.PI, '0,-1': Math.PI / 2 }
+
+const tiles = Array.from({ length: N }, () => Array(N).fill(null))
+const tileMeshes = []
+
+function buildTile(x, z) {
+  const old = tiles[z][x]
+  if (old) {
+    scene.remove(old)
+    old.geometry.dispose()
+    old.material.dispose()
+    tileMeshes.splice(tileMeshes.indexOf(old), 1)
+  }
+  const c = cell(x, z)
+  const pal = PALETTES[SKIN]
+  const p = world(x, z)
+  let mesh
+  if (c === '/' || c === '^') {
+    const lo = Math.floor(SURF[c])
+    // climb toward the first neighbour standing one level up; a ramp with
+    // nothing to climb to lies flat at its own half-level
+    const up = ORTHO.find(([dx, dz]) => floorOf(x + dx, z + dz) === lo + 1 && cell(x + dx, z + dz) !== '#' && cell(x + dx, z + dz) !== null)
+    const yLo = yOf(lo), yHi = up ? yOf(lo + 1) : yOf(lo + 0.5)
+    mesh = new THREE.Mesh(wedgeGeometry(-0.6, up ? yLo : yHi, yHi), new THREE.MeshLambertMaterial({ color: jitter(pal[c]) }))
+    mesh.position.set(p.x, 0, p.z)
+    if (up) mesh.rotation.y = FACING[`${up[0]},${up[1]}`]
+  } else {
+    const top = yOf(c === '#' ? WALL_TOP : SURF[c])
+    const h = top + 0.6
+    mesh = new THREE.Mesh(new THREE.BoxGeometry(0.94, h, 0.94), new THREE.MeshLambertMaterial({ color: jitter(pal[c]) }))
+    mesh.position.set(p.x, top - h / 2, p.z)
+  }
+  mesh.castShadow = true
+  mesh.receiveShadow = true
+  mesh.userData = { x, z }
+  scene.add(mesh)
+  tiles[z][x] = mesh
+  tileMeshes.push(mesh)
+}
+
+function buildBoard() {
+  for (let z = 0; z < N; z++) for (let x = 0; x < N; x++) buildTile(x, z)
+}
+
+// A ramp's slope depends on its neighbours, so editing a cell re-draws the
+// ring around it too. Nine boxes is nothing.
+function dressAround(x, z) {
+  for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
+    const nx = x + dx, nz = z + dz
+    if (cell(nx, nz) !== null) buildTile(nx, nz)
+  }
+  for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
+    const t = thingAt(x + dx, z + dz)
+    if (t) seatThing(t)
+  }
+}
+
+// ------------------------------------------------------------------ things
+// The library. Two programmer-art kinds and eleven from the POLYGON Vikings
+// pack. `solid` is the mechanical half: a solid thing blocks like a wall and
+// counts against connectivity; the rest is dressing you can walk over.
+// `h` and `fp` are the fit — a thing is scaled until it is either that tall or
+// that wide, whichever comes first, so a log lies low and a pine stands tall.
+const KINDS = {
+  tree:    { label: 'tree',      solid: true,  h: 2.1,  fp: 1.1, wild: true, poly: 'tree' },
+  rock:    { label: 'rock',      solid: true,  h: 0.7,  fp: 0.9, wild: true, poly: 'rock' },
+  pine:    { label: 'pine',      solid: true,  h: 2.6,  fp: 1.4, wild: true, glb: 'SM_Env_Tree_Pine_02' },
+  bigpine: { label: 'big pine',  solid: true,  h: 3.6,  fp: 1.9, wild: true, glb: 'SM_Env_Tree_Pine_Large_01' },
+  boulder: { label: 'boulder',   solid: true,  h: 0.9,  fp: 1.0, wild: true, glb: 'SM_Env_Rock_03' },
+  crag:    { label: 'crag',      solid: true,  h: 1.5,  fp: 1.0, wild: true, glb: 'SM_Env_Rock_06' },
+  stone:   { label: 'stone',     solid: false, h: 0.25, fp: 0.8, wild: true, glb: 'SM_Env_Stone_01' },
+  log:     { label: 'log',       solid: false, h: 0.4,  fp: 0.95, wild: true, glb: 'SM_Prop_Log_01' },
+  logs:    { label: 'log pile',  solid: true,  h: 0.6,  fp: 0.95, wild: true, glb: 'SM_Prop_Logs_01' },
+  crate:   { label: 'crate',     solid: true,  h: 0.6,  fp: 0.7, glb: 'SM_Prop_Crate_Base_01' },
+  barrel:  { label: 'barrel',    solid: false, h: 0.35, fp: 0.6, glb: 'SM_Prop_Barrel_Half_01' },
+  totem:   { label: 'totem',     solid: true,  h: 1.7,  fp: 0.9, glb: 'SM_Prop_Rock_Totem_01' },
+  statue:  { label: 'statue',    solid: true,  h: 1.6,  fp: 0.8, glb: 'SM_Stone_Statue_01' },
+  stonewall: { label: 'stone wall', solid: true, h: 1.7, fp: 0.98, poly: 'slab' },
+  fence:   { label: 'fence',     solid: true,  h: 0.8,  fp: 0.98, glb: 'SM_Prop_Fence_Wood_01' },
+  torch:   { label: 'torch',     solid: false, h: 1.1,  fp: 0.4, glb: 'SM_Prop_TorchStick_01' },
+}
+
+const loader = new GLTFLoader()
+const atlas = new THREE.TextureLoader().load('assets/synty_atlas.png')
+atlas.colorSpace = THREE.SRGBColorSpace
+atlas.flipY = false
+// the same lift the war-band gives its weapons: the POLYGON atlas is painted
+// for Unity's brighter default light and goes to mud under plain Lambert
+const atlasMat = new THREE.MeshLambertMaterial({ map: atlas, emissive: 0x5a5a5a, emissiveMap: atlas })
+
+// Every GLB is loaded once, fitted once, and cloned per placement.
+const protos = new Map()
+function protoOf(kind) {
+  if (protos.has(kind)) return protos.get(kind)
+  const k = KINDS[kind]
+  const p = new Promise((res, rej) => loader.load(`assets/${k.glb}.glb`, (gltf) => {
+    const root = gltf.scene
+    root.traverse((n) => { if (n.isMesh) { n.material = atlasMat; n.castShadow = true; n.receiveShadow = true } })
+    const box = new THREE.Box3().setFromObject(root)
+    const dim = box.getSize(new THREE.Vector3())
+    const s = Math.min(k.h / Math.max(dim.y, 1e-3), k.fp / Math.max(dim.x, dim.z, 1e-3))
+    root.scale.setScalar(s)
+    // feet on the ground, centred on the cell
+    const c = box.getCenter(new THREE.Vector3())
+    root.position.set(-c.x * s, -box.min.y * s, -c.z * s)
+    const g = new THREE.Group()
+    g.add(root)
+    res(g)
+  }, undefined, rej))
+  protos.set(kind, p)
+  return p
+}
+for (const kind in KINDS) if (KINDS[kind].glb) protoOf(kind)
+
+// The Step's forest tree: a trunk and two cones. Built fresh so each has its
+// own jitter — a wood of identical trees reads as a pattern, not a wood.
+function polyTree() {
+  const g = new THREE.Group()
+  const leaf = jitter(0x2e5c36)
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.15, 0.6, 7), new THREE.MeshLambertMaterial({ color: jitter(0x5a4632) }))
+  trunk.position.y = 0.3
+  const c1 = new THREE.Mesh(new THREE.ConeGeometry(0.46, 1.1, 8), new THREE.MeshLambertMaterial({ color: leaf }))
+  c1.position.y = 1.05
+  const c2 = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.8, 8), new THREE.MeshLambertMaterial({ color: leaf }))
+  c2.position.y = 1.7
+  for (const m of [trunk, c1, c2]) { m.castShadow = true; m.receiveShadow = true; g.add(m) }
+  return g
+}
+
+// A rock is an icosahedron with its corners shoved about and its top squashed.
+function polyRock() {
+  const geo = new THREE.IcosahedronGeometry(0.36, 0)
+  const pos = geo.attributes.position
+  for (let i = 0; i < pos.count; i++) {
+    const v = new THREE.Vector3().fromBufferAttribute(pos, i)
+    v.multiplyScalar(0.8 + Math.random() * 0.4)
+    v.y *= 0.65
+    pos.setXYZ(i, v.x, v.y, v.z)
+  }
+  geo.computeVertexNormals()
+  const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: jitter(0x6f6b66), flatShading: true }))
+  m.position.y = 0.2
+  m.castShadow = true
+  m.receiveShadow = true
+  const g = new THREE.Group()
+  g.add(m)
+  return g
+}
+
+// A stone wall is a cell-filling block with the statue's faceted look: a
+// subdivided box whose corners are shoved by a hash of where they sit, so the
+// faces that meet at an edge move together and the block stays watertight.
+// Flat shading does the crag. Each one is a little taller or shorter than
+// the next, so a run of them reads as laid stone rather than tiles.
+function polySlab() {
+  const W = 0.98, H = 1.7 * (0.9 + Math.random() * 0.2)
+  const geo = new THREE.BoxGeometry(W, H, W, 3, 5, 3)
+  const pos = geo.attributes.position
+  const seed = Math.random() * 1000
+  const hash = (a, b, c) => {
+    const t = Math.sin(a * 12.9898 + b * 78.233 + c * 37.719 + seed) * 43758.5453
+    return t - Math.floor(t)
+  }
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i)
+    const kx = Math.round(x * 100), ky = Math.round(y * 100), kz = Math.round(z * 100)
+    const bottom = y < -H / 2 + 1e-3
+    pos.setXYZ(i,
+      x + (hash(kx, ky, kz) - 0.5) * 0.14,
+      bottom ? y : y + (hash(ky, kz, kx) - 0.5) * 0.16,
+      z + (hash(kz, kx, ky) - 0.5) * 0.14)
+  }
+  const flat = geo.toNonIndexed()
+  flat.computeVertexNormals()
+  const m = new THREE.Mesh(flat, new THREE.MeshLambertMaterial({ color: jitter(0x8c8a86), flatShading: true }))
+  m.position.y = H / 2
+  m.castShadow = true
+  m.receiveShadow = true
+  const g = new THREE.Group()
+  g.add(m)
+  return g
+}
+
+const thingGroups = new Map()    // key -> Group in the scene
+
+async function dressThing(t) {
+  const k = KINDS[t.kind]
+  const POLY = { tree: polyTree, rock: polyRock, slab: polySlab }
+  const g = k.poly ? POLY[k.poly]() : (await protoOf(t.kind)).clone(true)
+  const stale = thingGroups.get(key(t.x, t.z))
+  if (stale) scene.remove(stale)
+  if (!THINGS.includes(t)) return          // erased while the model was loading
+  g.userData.thing = t
+  thingGroups.set(key(t.x, t.z), g)
+  scene.add(g)
+  seatThing(t)
+}
+
+function seatThing(t) {
+  const g = thingGroups.get(key(t.x, t.z))
+  if (!g) return
+  const p = world(t.x, t.z)
+  g.position.set(p.x, yOf(surf(t.x, t.z)), p.z)
+  g.rotation.y = t.rot
+}
+
+function undressThing(t) {
+  const g = thingGroups.get(key(t.x, t.z))
+  if (g) { scene.remove(g); thingGroups.delete(key(t.x, t.z)) }
+}
+
+function rebuildThings() {
+  for (const g of thingGroups.values()) scene.remove(g)
+  thingGroups.clear()
+  for (const t of THINGS) dressThing(t)
+}
+
+// ---------------------------------------------------------------- overlays
+// Stranded ground glows red: every pocket that cannot walk to the biggest one.
+// The check is the Step's own — orthogonal neighbours within half a step —
+// with solid things standing in for walls.
+const quad = new THREE.PlaneGeometry(0.94, 0.94)
+const strandMat = new THREE.MeshBasicMaterial({ color: 0xff5a4a, transparent: true, opacity: 0.42, depthWrite: false, fog: false })
+const strandPool = []
+let strandedCount = 0
+
+function gridWithThings() {
+  const g = MAP.map((r) => r.split(''))
+  for (const t of THINGS) if (KINDS[t.kind].solid) g[t.z][t.x] = '#'
+  return g
+}
+
+function walkComps(g) {
+  const seen = Array.from({ length: N }, () => Array(N).fill(false))
+  const comps = []
+  for (let z0 = 0; z0 < N; z0++) for (let x0 = 0; x0 < N; x0++) {
+    if (g[z0][x0] === '#' || seen[z0][x0]) continue
+    const cells = [], q = [[x0, z0]]
+    seen[z0][x0] = true
+    while (q.length) {
+      const [x, z] = q.pop()
+      cells.push([x, z])
+      for (const [dx, dz] of ORTHO) {
+        const nx = x + dx, nz = z + dz, c = at(g, nx, nz)
+        if (c === null || c === '#' || seen[nz][nx]) continue
+        if (Math.abs(SURF[c] - SURF[g[z][x]]) > 0.5 + 1e-6) continue
+        seen[nz][nx] = true
+        q.push([nx, nz])
+      }
+    }
+    comps.push(cells)
+  }
+  return comps
+}
+
+function showStranded() {
+  const comps = walkComps(gridWithThings()).sort((a, b) => b.length - a.length)
+  const stray = comps.slice(1).flat()
+  strandedCount = stray.length
+  while (strandPool.length < stray.length) {
+    const m = new THREE.Mesh(quad, strandMat)
+    m.rotation.x = -Math.PI / 2
+    m.visible = false
+    scene.add(m)
+    strandPool.push(m)
+  }
+  strandPool.forEach((m, i) => {
+    if (i >= stray.length) { m.visible = false; return }
+    const [x, z] = stray[i]
+    const p = world(x, z)
+    m.position.set(p.x, yOf(surf(x, z)) + 0.03, p.z)
+    m.visible = true
+  })
+  readoutRefresh()
+}
+
+// The brush footprint, drawn as thin rings over the cells a tap would touch.
+const edgeGeo = new THREE.BoxGeometry(1, 0.035, 1)
+const ringMat = new THREE.MeshBasicMaterial({ color: 0xffc247, fog: false })
+const rings = []
+for (let i = 0; i < 9; i++) {
+  const m = new THREE.Mesh(edgeGeo, ringMat)
+  m.visible = false
+  scene.add(m)
+  rings.push(m)
+}
+function showBrush(x, z) {
+  const cells = x === null ? [] : footprint(x, z)
+  rings.forEach((m, i) => {
+    if (i >= cells.length) { m.visible = false; return }
+    const [cx, cz] = cells[i]
+    const p = world(cx, cz)
+    const c = cell(cx, cz)
+    m.position.set(p.x, yOf(c === '#' ? WALL_TOP : SURF[c]) + 0.04, p.z)
+    m.visible = true
+  })
+}
+
+// ------------------------------------------------------- terrain generator
+// The Step's four recipes, verbatim — this is the base canvas. Forest '#'s
+// become tree things on the way out so the generator and the hand agree on
+// what a tree is.
+const R = (n) => Math.floor(Math.random() * n)
+const pickR = (arr) => arr[R(arr.length)]
+const gridOf = (ch) => Array.from({ length: N }, () => Array(N).fill(ch))
+const at = (g, x, z) => (x < 0 || z < 0 || x >= N || z >= N ? null : g[z][x])
+const grounded = (c) => c === '.' || c === '+' || c === '2'
+
+function heightField(hills, vales) {
+  if (hills < 0.02 && vales < 0.02) return () => 0
+  const L = 5
+  const lat = Array.from({ length: L }, () => Array.from({ length: L }, Math.random))
+  const s = (t) => t * t * (3 - 2 * t)
+  const h = Array.from({ length: N }, (_, z) => Array.from({ length: N }, (_, x) => {
+    const u = (x / (N - 1)) * (L - 1), v = (z / (N - 1)) * (L - 1)
+    const x0 = Math.min(L - 2, Math.floor(u)), z0 = Math.min(L - 2, Math.floor(v))
+    const fx = s(u - x0), fz = s(v - z0)
+    const a = lat[z0][x0] * (1 - fx) + lat[z0][x0 + 1] * fx
+    const b = lat[z0 + 1][x0] * (1 - fx) + lat[z0 + 1][x0 + 1] * fx
+    return a * (1 - fz) + b * fz
+  }))
+  const rank = h.flat().sort((p, q) => p - q)
+  const lo = vales < 0.02 ? -1 : rank[Math.floor(vales * 0.45 * (rank.length - 1))]
+  const hi = hills < 0.02 ? 2 : rank[Math.floor((1 - hills * 0.4) * (rank.length - 1))]
+  return (x, z) => (h[z][x] <= lo ? 0 : h[z][x] >= hi ? 2 : 1)
+}
+
+function carveRect(g, x0, z0, w, h, ch) {
+  for (let z = z0; z < z0 + h; z++) for (let x = x0; x < x0 + w; x++) g[z][x] = ch
+}
+
+function attachRamps(g) {
+  for (const lvl of [1, 2]) {
+    const upCh = LV[lvl], lowCh = LV[lvl - 1], rampCh = lvl === 1 ? '/' : '^'
+    const seen = Array.from({ length: N }, () => Array(N).fill(false))
+    for (let z0 = 0; z0 < N; z0++) for (let x0 = 0; x0 < N; x0++) {
+      if (g[z0][x0] !== upCh || seen[z0][x0]) continue
+      const cells = [], q = [[x0, z0]]
+      seen[z0][x0] = true
+      while (q.length) {
+        const [x, z] = q.pop()
+        cells.push([x, z])
+        for (const [dx, dz] of ORTHO) {
+          const nx = x + dx, nz = z + dz
+          if (at(g, nx, nz) === upCh && !seen[nz][nx]) { seen[nz][nx] = true; q.push([nx, nz]) }
+        }
+      }
+      const served = cells.some(([x, z]) => ORTHO.some(([dx, dz]) => at(g, x + dx, z + dz) === rampCh))
+      if (served) continue
+      const opts = []
+      for (const [x, z] of cells) for (const [dx, dz] of ORTHO) {
+        if (at(g, x + dx, z + dz) === lowCh) opts.push([x + dx, z + dz])
+      }
+      if (opts.length) { const [rx, rz] = pickR(opts); g[rz][rx] = rampCh }
+    }
+  }
+}
+
+function connectGround(g) {
+  for (let pass = 0; pass < 10; pass++) {
+    attachRamps(g)
+    const comps = walkComps(g).sort((a, b) => b.length - a.length)
+    if (comps.length <= 1) break
+    const main = comps[0]
+    const mainSet = new Set(main.map(([x, z]) => `${x},${z}`))
+    let trenched = false
+    for (let i = 1; i < comps.length && !trenched; i++) {
+      let ramped = false
+      outer: for (const [x, z] of comps[i]) {
+        const ca = g[z][x]
+        if (!grounded(ca)) continue
+        for (const [dx, dz] of ORTHO) {
+          const nx = x + dx, nz = z + dz
+          if (!mainSet.has(`${nx},${nz}`)) continue
+          const cb = at(g, nx, nz)
+          if (!grounded(cb)) continue
+          const la = SURF[ca], lb = SURF[cb]
+          if (Math.abs(la - lb) !== 1) continue
+          const hi = Math.max(la, lb)
+          if (la < lb) g[z][x] = hi === 1 ? '/' : '^'
+          else g[nz][nx] = hi === 1 ? '/' : '^'
+          ramped = true
+          break outer
+        }
+      }
+      if (ramped) continue
+      let [x, z] = pickR(comps[i])
+      const [bx, bz] = pickR(main)
+      while (x !== bx) { x += Math.sign(bx - x); g[z][x] = '.' }
+      while (z !== bz) { z += Math.sign(bz - z); g[z][x] = '.' }
+      trenched = true
+    }
+  }
+  attachRamps(g)
+}
+
+function genForest(dens, fld) {
+  const g = gridOf('.')
+  for (let z = 0; z < N; z++) for (let x = 0; x < N; x++) g[z][x] = LV[fld(x, z)]
+  const trees = Math.round(8 + dens * 40)
+  for (let i = 0; i < trees; i++) {
+    const x = R(N), z = R(N)
+    if (!grounded(g[z][x])) continue
+    g[z][x] = '#'
+    if (Math.random() < 0.3) {
+      const [dx, dz] = pickR(ORTHO)
+      if (grounded(at(g, x + dx, z + dz))) g[z + dz][x + dx] = '#'
+    }
+  }
+  return g
+}
+
+function genDungeon(dens, fld) {
+  const g = gridOf('#')
+  const rooms = []
+  const nRooms = 5 + R(3)
+  for (let i = 0; i < nRooms; i++) {
+    const w = 3 + R(4), h = 3 + R(4)
+    const x = 1 + R(N - w - 2), z = 1 + R(N - h - 2)
+    let lvl = fld(x + (w >> 1), z + (h >> 1))
+    if (i > 0) lvl = THREE.MathUtils.clamp(lvl, rooms[i - 1].lvl - 1, rooms[i - 1].lvl + 1)
+    rooms.push({ x, z, w, h, lvl })
+    carveRect(g, x, z, w, h, LV[lvl])
+  }
+  const mid = (r) => [r.x + (r.w >> 1), r.z + (r.h >> 1)]
+  const dig = (ra, rb) => {
+    const pts = []
+    let [x, z] = mid(ra)
+    const b = mid(rb)
+    while (x !== b[0]) { x += Math.sign(b[0] - x); pts.push([x, z]) }
+    while (z !== b[1]) { z += Math.sign(b[1] - z); pts.push([x, z]) }
+    pts.forEach(([px, pz], i) => { g[pz][px] = LV[i < pts.length / 2 ? ra.lvl : rb.lvl] })
+  }
+  for (let i = 1; i < rooms.length; i++) dig(rooms[i - 1], rooms[i])
+  dig(rooms[0], pickR(rooms))
+  const pillars = Math.round(dens * 12)
+  for (let i = 0; i < pillars; i++) {
+    const x = 1 + R(N - 2), z = 1 + R(N - 2)
+    if (grounded(g[z][x]) && ORTHO.every(([dx, dz]) => grounded(at(g, x + dx, z + dz)))) g[z][x] = '#'
+  }
+  return g
+}
+
+function genBuilding(dens, fld) {
+  const g = gridOf('.')
+  for (let i = 0; i < N; i++) { g[0][i] = g[N - 1][i] = '#'; g[i][0] = g[i][N - 1] = '#' }
+  const rects = [{ x: 1, z: 1, w: N - 2, h: N - 2 }]
+  const gaps = []
+  const splits = 3 + Math.round(dens * 5)
+  for (let s = 0; s < splits; s++) {
+    rects.sort((a, b) => b.w * b.h - a.w * a.h)
+    const r = rects[0]
+    if (Math.max(r.w, r.h) < 7) break
+    rects.shift()
+    if (r.w >= r.h) {
+      const wx = r.x + 3 + R(r.w - 6)
+      for (let z = r.z; z < r.z + r.h; z++) g[z][wx] = '#'
+      const dz = r.z + R(r.h - 1)
+      gaps.push([wx, dz, 1, 0])
+      if (dz + 1 < r.z + r.h) gaps.push([wx, dz + 1, 1, 0])
+      rects.push({ x: r.x, z: r.z, w: wx - r.x, h: r.h }, { x: wx + 1, z: r.z, w: r.x + r.w - wx - 1, h: r.h })
+    } else {
+      const wz = r.z + 3 + R(r.h - 6)
+      for (let x = r.x; x < r.x + r.w; x++) g[wz][x] = '#'
+      const dx = r.x + R(r.w - 1)
+      gaps.push([dx, wz, 0, 1])
+      if (dx + 1 < r.x + r.w) gaps.push([dx + 1, wz, 0, 1])
+      rects.push({ x: r.x, z: r.z, w: r.w, h: wz - r.z }, { x: r.x, z: wz + 1, w: r.w, h: r.z + r.h - wz - 1 })
+    }
+  }
+  for (const r of rects) {
+    const lvl = Math.min(1, fld(r.x + (r.w >> 1), r.z + (r.h >> 1)))
+    carveRect(g, r.x, r.z, r.w, r.h, LV[lvl])
+  }
+  for (const [x, z, px, pz] of gaps) {
+    const la = at(g, x - px, z - pz) === '+' ? 1 : 0
+    const lb = at(g, x + px, z + pz) === '+' ? 1 : 0
+    g[z][x] = la === lb ? LV[la] : '/'
+  }
+  return g
+}
+
+function genStreets(dens, fld) {
+  const g = gridOf('.')
+  for (let z = 0; z < N; z++) for (let x = 0; x < N; x++) g[z][x] = LV[fld(x, z)]
+  const axis = () => {
+    const cuts = []
+    let p = 1 + R(2)
+    while (p < N - 4) { const b = 4 + R(3); cuts.push([p, Math.min(p + b, N - 1)]); p += b + 2 }
+    return cuts
+  }
+  const xs = axis(), zs = axis()
+  for (const [x0, x1] of xs) for (const [z0, z1] of zs) {
+    if (Math.random() < 0.25 + dens * 0.6) carveRect(g, x0, z0, x1 - x0, z1 - z0, '#')
+  }
+  return g
+}
+
+const GEN = { forest: genForest, dungeon: genDungeon, building: genBuilding, streets: genStreets }
+let TERRAIN = 'forest'
+
+// the level a cleared cell should sit at: its tallest walkable neighbour
+function neighbourFloor(g, x, z) {
+  let base = 0
+  for (const [dx, dz] of ORTHO) {
+    const c = at(g, x + dx, z + dz)
+    if (c !== null && c !== '#') base = Math.max(base, Math.floor(SURF[c]))
+  }
+  return base
+}
+
+function regenerate() {
+  snapshot()
+  const dens = Number(densRange.value) / 100
+  const fld = heightField(Number(hillRange.value) / 100, Number(valeRange.value) / 100)
+  SKIN = TERRAIN
+  const g = GEN[TERRAIN](dens, fld)
+  connectGround(g)
+  THINGS = []
+  if (TERRAIN === 'forest') {
+    for (let z = 0; z < N; z++) for (let x = 0; x < N; x++) {
+      if (g[z][x] !== '#') continue
+      g[z][x] = LV[neighbourFloor(g, x, z)]
+      THINGS.push({ kind: Math.random() < 0.7 ? 'tree' : 'pine', x, z, rot: Math.random() * Math.PI * 2 })
+    }
+  }
+  MAP = g.map((row) => row.join(''))
+  buildBoard()
+  rebuildThings()
+  showStranded()
+  say(`new ground — ${TERRAIN}`)
+}
+
+// ------------------------------------------------------------------- tools
+const S = {
+  tool: 'look',       // 'look' | 'raise' | 'lower' | 'ramp' | 'wall' | 'clear' | 'things'
+  kind: 'tree',       // which thing the drawer has picked — or 'turn' | 'erase'
+  size: 1,            // brush: 1 or 3
+  view: { x: (N - 1) / 2, z: (N - 1) / 2 },
+  menuOpen: false,
+}
+const editing = () => S.tool !== 'look'
+const groundTool = () => ['raise', 'lower', 'ramp', 'wall', 'clear'].includes(S.tool)
+
+function footprint(x, z) {
+  if (S.size === 1 || !groundTool()) return [[x, z]]
+  const out = []
+  for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
+    if (cell(x + dx, z + dz) !== null) out.push([x + dx, z + dz])
+  }
+  return out
+}
+
+// Ground edits. Each returns a reason when it refuses, so a tap that does
+// nothing still answers.
+function editGround(x, z) {
+  const c = cell(x, z)
+  const lvl = Math.floor(SURF[c])
+  switch (S.tool) {
+    case 'raise':
+      if (c === '#') return 'that is a wall — clear it first'
+      if (c === '2') return 'as high as the table goes'
+      setCell(x, z, LV[Math.min(2, lvl + 1)])
+      return null
+    case 'lower':
+      if (c === '#') return 'that is a wall — clear it first'
+      if (c === '.') return 'as low as the table goes'
+      setCell(x, z, c === '/' ? '.' : c === '^' ? '+' : LV[lvl - 1])
+      return null
+    case 'ramp': {
+      if (c === '#') return 'that is a wall — clear it first'
+      const up = ORTHO.some(([dx, dz]) => grounded(cell(x + dx, z + dz)) && floorOf(x + dx, z + dz) === lvl + 1)
+      const down = ORTHO.some(([dx, dz]) => grounded(cell(x + dx, z + dz)) && floorOf(x + dx, z + dz) === lvl - 1)
+      if (up) setCell(x, z, RAMP[lvl])
+      else if (down) setCell(x, z, RAMP[lvl - 1])
+      else return 'a ramp needs a ledge beside it'
+      return null
+    }
+    case 'wall':
+      if (c === '#') return null
+      setCell(x, z, '#')
+      eraseThing(x, z)
+      return null
+    case 'clear': {
+      eraseThing(x, z)
+      if (c !== '#') return null
+      setCell(x, z, LV[neighbourFloor(MAP.map((r) => r.split('')), x, z)])
+      return null
+    }
+  }
+  return null
+}
+
+function eraseThing(x, z) {
+  const t = thingAt(x, z)
+  if (!t) return false
+  THINGS.splice(THINGS.indexOf(t), 1)
+  undressThing(t)
+  return true
+}
+
+function editThing(x, z) {
+  const c = cell(x, z)
+  if (S.kind === 'erase') return eraseThing(x, z) ? null : 'nothing there'
+  if (S.kind === 'turn') {
+    const t = thingAt(x, z)
+    if (!t) return 'nothing there to turn'
+    t.rot += Math.PI / 2
+    seatThing(t)
+    return null
+  }
+  if (c === '#') return 'that is a wall'
+  const k = KINDS[S.kind]
+  const have = thingAt(x, z)
+  if (have && have.kind === S.kind) return 'already there — turn or erase it'
+  eraseThing(x, z)
+  const t = { kind: S.kind, x, z, rot: k.wild ? Math.random() * Math.PI * 2 : 0 }
+  THINGS.push(t)
+  dressThing(t)
+  return null
+}
+
+// One stroke = one undo step. Cells are touched once per stroke, so a drag
+// that wobbles over a square does not raise it twice.
+const undoStack = []
+let stroke = null
+function snapshot() {
+  undoStack.push({ map: MAP.slice(), things: THINGS.map((t) => ({ ...t })), skin: SKIN })
+  if (undoStack.length > 60) undoStack.shift()
+  undoBtn.disabled = false
+}
+function undo() {
+  const s = undoStack.pop()
+  if (!s) return
+  MAP = s.map
+  THINGS = s.things
+  SKIN = s.skin
+  buildBoard()
+  rebuildThings()
+  showStranded()
+  undoBtn.disabled = undoStack.length === 0
+  say('undone')
+}
+
+function touchCell(x, z) {
+  if (!stroke) return
+  const k = key(x, z)
+  if (stroke.seen.has(k)) return
+  stroke.seen.add(k)
+  let why = null
+  if (groundTool()) {
+    for (const [cx, cz] of footprint(x, z)) {
+      if (stroke.seen.has(key(cx, cz)) && (cx !== x || cz !== z)) continue
+      stroke.seen.add(key(cx, cz))
+      const r = editGround(cx, cz)
+      if (r && !why) why = r
+      else if (!r) { stroke.dirty = true; dressAround(cx, cz) }
+    }
+  } else {
+    why = editThing(x, z)
+    if (!why) stroke.dirty = true
+  }
+  if (why && stroke.seen.size === 1) say(why)
+  if (stroke.dirty) showStranded()
+}
+
+// -------------------------------------------------------------------- input
+const ray = new THREE.Raycaster()
+const ndc = new THREE.Vector2()
+const pointers = new Map()
+let movedAny = false
+let pinchStart = null
+let orbiting = false
+
+function pick(clientX, clientY) {
+  const r = renderer.domElement.getBoundingClientRect()
+  ndc.set(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1)
+  ray.setFromCamera(ndc, camera)
+  const hit = ray.intersectObjects(tileMeshes, false)[0]
+  return hit ? hit.object.userData : null
+}
+
+function groundUnder(clientX, clientY) {
+  const r = renderer.domElement.getBoundingClientRect()
+  ndc.set(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1)
+  ray.setFromCamera(ndc, camera)
+  const o = ray.ray.origin, d = ray.ray.direction
+  if (d.y > -1e-4) return null
+  const tt = -o.y / d.y
+  return { x: o.x + d.x * tt + (N - 1) / 2, z: o.z + d.z * tt + (N - 1) / 2 }
+}
+
+const el = renderer.domElement
+el.addEventListener('contextmenu', (e) => e.preventDefault())
+
+el.addEventListener('pointerdown', (e) => {
+  try { el.setPointerCapture(e.pointerId) } catch { /* synthetic */ }
+  if (pointers.size === 0) movedAny = false
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY })
+  if (S.menuOpen) { S.menuOpen = false; menu.hidden = true }
+  if (pointers.size === 2) {
+    // a second finger ends any stroke: two fingers are for the camera
+    stroke = null
+    showBrush(null)
+    const [a, b] = [...pointers.values()]
+    pinchStart = {
+      d: Math.hypot(a.x - b.x, a.y - b.y),
+      rad: camGoal.rad,
+      view: { ...S.view },
+      anchor: groundUnder((a.x + b.x) / 2, (a.y + b.y) / 2),
+      mid: groundUnder((a.x + b.x) / 2, (a.y + b.y) / 2),
+    }
+    return
+  }
+  // a mouse's right button orbits whatever the tool, so a laptop never has to
+  // leave a brush just to look round the board
+  orbiting = e.pointerType === 'mouse' && (e.button === 2 || e.ctrlKey)
+  if (editing() && !orbiting) {
+    snapshot()
+    stroke = { seen: new Set(), dirty: false }
+    const c = pick(e.clientX, e.clientY)
+    if (c) { touchCell(c.x, c.z); showBrush(c.x, c.z) }
+  }
+})
+
+el.addEventListener('pointermove', (e) => {
+  const p = pointers.get(e.pointerId)
+  if (!p) {
+    // hover, mouse only: show where the brush would land
+    if (e.pointerType === 'mouse' && editing()) { const c = pick(e.clientX, e.clientY); showBrush(c ? c.x : null, c ? c.z : null) }
+    return
+  }
+  const dx = e.clientX - p.x, dy = e.clientY - p.y
+  p.x = e.clientX; p.y = e.clientY
+  if (Math.hypot(e.clientX - p.sx, e.clientY - p.sy) > 10) movedAny = true
+
+  if (pointers.size === 2 && pinchStart) {
+    const [a, b] = [...pointers.values()]
+    const d = Math.hypot(a.x - b.x, a.y - b.y)
+    zoomTo(pinchStart.rad * (pinchStart.d / Math.max(d, 1)), pinchStart.anchor, pinchStart.rad, pinchStart.view)
+    // and the pair's drift pans — the ground between the fingers stays under them
+    const now = groundUnder((a.x + b.x) / 2, (a.y + b.y) / 2)
+    if (now && pinchStart.mid) {
+      setView(S.view.x - (now.x - pinchStart.mid.x), S.view.z - (now.z - pinchStart.mid.z))
+      pinchStart.mid = groundUnder((a.x + b.x) / 2, (a.y + b.y) / 2)
+    }
+  } else if (pointers.size === 1 && stroke) {
+    const c = pick(e.clientX, e.clientY)
+    if (c) { touchCell(c.x, c.z); showBrush(c.x, c.z) }
+  } else if (pointers.size === 1 && (S.tool === 'look' || orbiting)) {
+    if (e.shiftKey || e.buttons === 4) {
+      const was = groundUnder(e.clientX - dx, e.clientY - dy)
+      const now = groundUnder(e.clientX, e.clientY)
+      if (was && now) setView(S.view.x - (now.x - was.x), S.view.z - (now.z - was.z))
+    } else {
+      camGoal.az -= dx * 0.006
+      camGoal.pol = THREE.MathUtils.clamp(camGoal.pol - dy * 0.005, 0.22, 1.32)
+      userRotated = true
+    }
+  }
+})
+
+function release(e) {
+  if (!pointers.has(e.pointerId)) return
+  pointers.delete(e.pointerId)
+  if (pointers.size < 2) pinchStart = null
+  if (stroke) {
+    // an empty stroke should not cost an undo step
+    if (!stroke.dirty) undoStack.pop()
+    undoBtn.disabled = undoStack.length === 0
+    stroke = null
+  }
+  orbiting = false
+  if (e.pointerType !== 'mouse') showBrush(null)
+}
+el.addEventListener('pointerup', release)
+el.addEventListener('pointercancel', release)
+
+el.addEventListener('wheel', (e) => {
+  e.preventDefault()
+  const from = camGoal.rad
+  zoomTo(from + e.deltaY * 0.012, groundUnder(e.clientX, e.clientY), from, { ...S.view })
+}, { passive: false })
+
+addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'z') { e.preventDefault(); undo() }
+})
+
+// ---------------------------------------------------------------------- HUD
+const readout = document.getElementById('readout')
+const toast = document.getElementById('toast')
+const menu = document.getElementById('menu')
+const undoBtn = document.getElementById('undoBtn')
+const sizeRow = document.getElementById('sizeRow')
+const thingRow = document.getElementById('thingRow')
+let toastTimer = 0
+function say(msg) {
+  toast.textContent = msg
+  toast.classList.add('on')
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => toast.classList.remove('on'), 1500)
+}
+
+function readoutRefresh() {
+  const bits = []
+  if (S.tool === 'things') bits.push(S.kind === 'turn' ? 'turn' : S.kind === 'erase' ? 'erase' : `${KINDS[S.kind].label}${KINDS[S.kind].solid ? ' · blocks' : ' · dressing'}`)
+  else bits.push(S.tool + (groundTool() && S.size === 3 ? ' 3×3' : ''))
+  readout.textContent = strandedCount ? `${bits[0]} · ${strandedCount} stranded` : bits[0]
+  readout.classList.toggle('bad', strandedCount > 0)
+}
+
+undoBtn.onclick = undo
+undoBtn.disabled = true
+
+document.getElementById('menuBtn').onclick = () => {
+  S.menuOpen = !S.menuOpen
+  menu.hidden = !S.menuOpen
+}
+
+for (const b of document.querySelectorAll('[data-tool]')) {
+  b.onclick = () => {
+    S.tool = b.dataset.tool
+    for (const o of document.querySelectorAll('[data-tool]')) o.setAttribute('aria-pressed', String(o === b))
+    sizeRow.hidden = !groundTool()
+    thingRow.hidden = S.tool !== 'things'
+    showBrush(null)
+    readoutRefresh()
+  }
+}
+for (const b of document.querySelectorAll('[data-size]')) {
+  b.onclick = () => {
+    S.size = Number(b.dataset.size)
+    for (const o of document.querySelectorAll('[data-size]')) o.setAttribute('aria-pressed', String(o === b))
+    readoutRefresh()
+  }
+}
+
+// the drawer: one chip per kind, then the two verbs that act on a placed thing
+const drawer = []
+for (const kind in KINDS) {
+  const b = document.createElement('button')
+  b.className = 'chip' + (KINDS[kind].solid ? ' solid' : '')
+  b.dataset.kind = kind
+  b.textContent = KINDS[kind].label
+  drawer.push(b)
+}
+const sep = document.createElement('div')
+sep.className = 'sep'
+for (const [kind, label] of [['turn', 'turn'], ['erase', 'erase']]) {
+  const b = document.createElement('button')
+  b.className = 'chip' + (kind === 'erase' ? ' danger' : '')
+  b.dataset.kind = kind
+  b.textContent = label
+  drawer.push(b)
+}
+drawer.forEach((b, i) => {
+  if (i === Object.keys(KINDS).length) thingRow.appendChild(sep)
+  thingRow.appendChild(b)
+  b.setAttribute('aria-pressed', String(b.dataset.kind === S.kind))
+  b.onclick = () => {
+    S.kind = b.dataset.kind
+    for (const o of drawer) o.setAttribute('aria-pressed', String(o === b))
+    readoutRefresh()
+  }
+})
+
+const densRange = document.getElementById('densRange')
+const hillRange = document.getElementById('hillRange')
+const valeRange = document.getElementById('valeRange')
+for (const b of document.querySelectorAll('[data-terr]')) {
+  b.onclick = () => {
+    TERRAIN = b.dataset.terr
+    for (const o of document.querySelectorAll('[data-terr]')) o.setAttribute('aria-pressed', String(o === b))
+    regenerate()
+  }
+}
+densRange.onchange = hillRange.onchange = valeRange.onchange = regenerate
+document.getElementById('genBtn').onclick = regenerate
+
+// mend: the generator's own repair pass, run over the table as it stands.
+// Solid things count as walls; a trench carved through one removes it.
+document.getElementById('mendBtn').onclick = () => {
+  if (!strandedCount) { say('nothing stranded'); return }
+  snapshot()
+  const g = gridWithThings()
+  connectGround(g)
+  for (const t of THINGS.slice()) if (KINDS[t.kind].solid && g[t.z][t.x] !== '#') eraseThing(t.x, t.z)
+  MAP = g.map((row, z) => row.map((c, x) => (c === '#' && thingAt(x, z) ? MAP[z][x] : c)).join(''))
+  buildBoard()
+  rebuildThings()
+  showStranded()
+  say('mended')
+}
+
+document.getElementById('clearThingsBtn').onclick = () => {
+  if (!THINGS.length) return
+  snapshot()
+  THINGS = []
+  rebuildThings()
+  showStranded()
+  say('cleared')
+}
+
+document.getElementById('copyBtn').onclick = async () => {
+  const out = JSON.stringify({ n: N, skin: SKIN, map: MAP, things: THINGS.map((t) => ({ kind: t.kind, x: t.x, z: t.z, rot: Math.round(t.rot * 100) / 100 })) })
+  try {
+    await navigator.clipboard.writeText(out)
+    say('copied')
+  } catch {
+    console.log(out)
+    say('clipboard refused — it is in the console')
+  }
+}
+
+// ------------------------------------------------------------------- camera
+const cam = { az: Math.PI * 0.25, pol: 0.92, rad: 20 }
+const camGoal = { ...cam }
+let userZoomed = false
+let userRotated = false
+const LIFT = 0.08
+
+function resize() {
+  const w = innerWidth, h = innerHeight
+  const portrait = w / h < 0.85
+  renderer.setSize(w, h)
+  camera.aspect = w / h
+  camera.setViewOffset(w, h, 0, portrait ? h * LIFT : 0, w, h)
+  if (!userRotated) {
+    cam.az = camGoal.az = portrait ? 0 : Math.PI * 0.25
+    cam.pol = camGoal.pol = portrait ? 0.8 : 0.92
+  }
+  if (!userZoomed) fitCamera()
+}
+
+function placeCamera(rad) {
+  camera.position.set(
+    FOCUS.x + rad * Math.sin(cam.pol) * Math.sin(cam.az),
+    FOCUS.y + rad * Math.cos(cam.pol),
+    FOCUS.z + rad * Math.sin(cam.pol) * Math.cos(cam.az),
+  )
+  camera.lookAt(FOCUS)
+  camera.updateMatrixWorld()
+}
+
+function fitCamera() {
+  const c = world(S.view.x, S.view.z)
+  const half = VIEW / 2
+  const pts = []
+  for (const dx of [-half, half])
+    for (const dz of [-half, half])
+      for (const y of [0, yOf(MAX_ALT)]) pts.push(new THREE.Vector3(c.x + dx, y, c.z + dz))
+  let rad = camGoal.rad
+  for (let i = 0; i < 6; i++) {
+    placeCamera(rad)
+    let over = 0
+    for (const q of pts) {
+      const p = q.clone().project(camera)
+      over = Math.max(over, Math.abs(p.x) / 0.95, Math.abs(p.y) / 0.9)
+    }
+    rad = THREE.MathUtils.clamp(rad * over, 8, 48)
+  }
+  cam.rad = camGoal.rad = rad
+}
+
+function setView(x, z) {
+  const lo = VIEW / 2 - 0.5, hi = N - VIEW / 2 - 0.5
+  S.view.x = THREE.MathUtils.clamp(x, lo, hi)
+  S.view.z = THREE.MathUtils.clamp(z, lo, hi)
+  const c = world(S.view.x, S.view.z)
+  FOCUS.set(c.x, 0.25, c.z)
+  if (!userZoomed) fitCamera()
+}
+
+function zoomTo(rad, anchor, fromRad, fromView) {
+  const next = THREE.MathUtils.clamp(rad, 8, 48)
+  camGoal.rad = next
+  userZoomed = true
+  if (!anchor) return
+  const k = THREE.MathUtils.clamp(1 - next / fromRad, -1, 1)
+  setView(fromView.x + (anchor.x - fromView.x) * k, fromView.z + (anchor.z - fromView.z) * k)
+}
+
+addEventListener('resize', resize)
+addEventListener('orientationchange', () => setTimeout(resize, 120))
+
+function frame() {
+  cam.az += (camGoal.az - cam.az) * 0.22
+  cam.pol += (camGoal.pol - cam.pol) * 0.22
+  cam.rad += (camGoal.rad - cam.rad) * 0.18
+  placeCamera(cam.rad)
+  scene.fog.near = cam.rad * 0.85
+  scene.fog.far = cam.rad * 2.4
+  renderer.render(scene, camera)
+  requestAnimationFrame(frame)
+}
+
+// ---------------------------------------------------------------- go
+regenerate()
+undoStack.length = 0          // the opening deal is not an edit
+undoBtn.disabled = true
+setView(S.view.x, S.view.z)
+resize()
+readoutRefresh()
+requestAnimationFrame(frame)
+</script>

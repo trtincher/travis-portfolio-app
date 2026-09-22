@@ -2,6 +2,8 @@ export interface ResumeData {
   name: string;
   position: string;
   summary?: string;
+  tagline?: string;
+  selectedWork?: SelectedWork;
   email: string;
   phone: string;
   linkedin: string;
@@ -41,4 +43,9 @@ export enum SkillType {
   Backend = 'BACK END',
   DevOps = 'DEV OPS',
   Other = 'OTHER',
+}
+export interface SelectedWork {
+  title: string;
+  period: string;
+  bullets: string[];
 }

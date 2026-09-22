@@ -1,0 +1,946 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#141118">
+<title>the Effigy</title>
+<style>
+:root{
+  --bg:#141118; --panel:#1d1a24; --panel2:#252131; --line:#332c40;
+  --ink:#ece7f2; --dim:#9990a8; --dimmer:#6d6480;
+  --gold:#e8b653;      /* yours */
+  --rolled:#5c5470;    /* not yours yet */
+  --warn:#e0715f;      /* what it costs */
+  --good:#7fc98a;      /* what it gives */
+  --tap:44px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{
+  background:var(--bg); color:var(--ink);
+  font:400 16px/1.4 ui-rounded,-apple-system,"Segoe UI",Roboto,sans-serif;
+  overscroll-behavior:none;
+}
+#app{
+  max-width:520px; margin:0 auto; min-height:100%;
+  display:flex; flex-direction:column;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+}
+
+/* ---------- identity strip ---------- */
+header{
+  position:sticky; top:0; z-index:5; background:var(--bg);
+  padding:.75rem 1rem .5rem; border-bottom:1px solid var(--line);
+}
+.namerow{display:flex; align-items:baseline; gap:.5rem}
+h1{font-size:1.45rem; margin:0; font-weight:600; letter-spacing:.01em}
+.subtitle{color:var(--dim); font-size:.95rem; margin-top:.15rem}
+.claimed{margin-top:.55rem; display:flex; align-items:center; gap:.5rem}
+.pips{display:flex; gap:4px; flex:1}
+.pip{height:6px; flex:1; border-radius:3px; background:var(--rolled); transition:background .25s}
+.pip.on{background:var(--gold)}
+.claimed b{font-size:.8rem; font-weight:600; color:var(--dim); letter-spacing:.04em}
+
+/* ---------- sheet ---------- */
+main{flex:1; padding:.5rem 1rem calc(1.5rem + env(safe-area-inset-bottom))}
+.row{
+  display:flex; align-items:center; gap:.75rem; width:100%;
+  min-height:var(--tap); padding:.7rem .85rem; margin:.4rem 0;
+  background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--rolled);
+  border-radius:12px; color:inherit; font:inherit; text-align:left; cursor:pointer;
+}
+.row.mine{border-left-color:var(--gold)}
+.row:active{background:var(--panel2)}
+.row .k{color:var(--dim); font-size:.72rem; letter-spacing:.09em; text-transform:uppercase}
+.row .v{font-size:1.02rem; margin-top:.1rem}
+.row .body{flex:1; min-width:0}
+.row .v small{color:var(--dim); font-size:.85rem}
+.row .chev{color:var(--dimmer); font-size:1.2rem}
+.stats{display:grid; grid-template-columns:repeat(3,1fr); gap:.4rem; margin-top:.45rem}
+.stat{background:var(--panel2); border-radius:8px; padding:.4rem .3rem; text-align:center}
+.stat b{display:block; font-size:.62rem; color:var(--dim); letter-spacing:.08em}
+.stat i{display:block; font-style:normal; font-size:1.15rem; font-weight:600; line-height:1.2}
+.stat u{display:block; text-decoration:none; font-size:.72rem; color:var(--dim)}
+.vitals{display:flex; gap:.5rem; margin:.4rem 0 .1rem}
+.vital{flex:1; background:var(--panel); border:1px solid var(--line); border-radius:12px;
+  padding:.55rem; text-align:center}
+.vital b{display:block; font-size:.62rem; color:var(--dim); letter-spacing:.08em}
+.vital i{font-style:normal; font-size:1.3rem; font-weight:600}
+.tags{display:flex; flex-wrap:wrap; gap:.3rem; margin-top:.3rem}
+.tag{background:var(--panel2); color:var(--dim); font-size:.78rem;
+  padding:.15rem .5rem; border-radius:999px}
+.tag.free{color:var(--dimmer); font-style:italic}
+.hint{color:var(--dimmer); font-size:.8rem; text-align:center; margin:1rem 0 .3rem}
+
+/* ---------- drawer ---------- */
+#scrim{position:fixed; inset:0; background:#000a; opacity:0; pointer-events:none;
+  transition:opacity .2s; z-index:8}
+#scrim.up{opacity:1; pointer-events:auto}
+#drawer{
+  position:fixed; left:0; right:0; bottom:0; z-index:9;
+  max-height:88dvh; display:flex; flex-direction:column;
+  background:var(--panel); border-top:1px solid var(--line);
+  border-radius:18px 18px 0 0; transform:translateY(101%); transition:transform .22s ease-out;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+#drawer.up{transform:none}
+.dhead{padding:.9rem 1rem .5rem; border-bottom:1px solid var(--line)}
+.grab{width:36px; height:4px; border-radius:2px; background:var(--line); margin:0 auto .7rem}
+.dhead h2{margin:0; font-size:1.1rem; font-weight:600}
+.dhead p{margin:.2rem 0 0; color:var(--dim); font-size:.85rem}
+.dbody{overflow-y:auto; -webkit-overflow-scrolling:touch; padding:.6rem 1rem 0}
+.opt{
+  display:block; width:100%; text-align:left; font:inherit; color:inherit; cursor:pointer;
+  background:var(--panel2); border:1px solid var(--line); border-radius:12px;
+  padding:.7rem .8rem; margin:.45rem 0; min-height:var(--tap);
+}
+.opt.sel{border-color:var(--gold); background:#2b2436}
+.opt.dis{opacity:.45}
+.opt .t{font-size:1rem; font-weight:600; display:flex; justify-content:space-between; gap:.5rem}
+.opt .d{color:var(--dim); font-size:.85rem; margin-top:.2rem}
+.gives,.costs{font-size:.82rem; margin-top:.35rem; display:flex; gap:.4rem}
+.gives{color:var(--good)} .costs{color:var(--warn)}
+.gives span,.costs span{flex:1}
+.gives .mark,.costs .mark,.opt .t .mark{flex:0 0 auto; font-weight:700}
+.dfoot{padding:.7rem 1rem calc(.7rem + env(safe-area-inset-bottom)); border-top:1px solid var(--line);
+  display:flex; gap:.6rem}
+.btn{flex:1; min-height:var(--tap); border-radius:11px; font:inherit; font-weight:600;
+  border:1px solid var(--line); background:var(--panel2); color:var(--ink); cursor:pointer}
+.btn.go{background:var(--gold); color:#241c08; border-color:var(--gold)}
+.btn:disabled{opacity:.4}
+input.name{width:100%; font:inherit; font-size:1.2rem; padding:.7rem .8rem; border-radius:11px;
+  background:var(--panel2); border:1px solid var(--line); color:var(--ink)}
+.arr{display:grid; grid-template-columns:repeat(3,1fr); gap:.5rem; margin:.2rem 0 .6rem}
+.arr button{font:inherit; color:inherit; cursor:pointer; padding:.55rem .2rem; border-radius:10px;
+  background:var(--panel2); border:1px solid var(--line); min-height:var(--tap)}
+.arr button.sel{border-color:var(--gold); background:#2b2436}
+.arr button b{display:block; font-size:1.25rem}
+.arr button i{font-style:normal; font-size:.7rem; color:var(--dim)}
+.arr button u{display:block; text-decoration:none; font-size:1rem; font-weight:600;
+  color:var(--gold); font-variant-numeric:tabular-nums; line-height:1.2}
+/* A statement about the whole drawer, said once. Anything true of every
+   option belongs here rather than repeated on each of them. */
+.note{
+  font-size:.85rem; color:var(--dim); line-height:1.4;
+  border-left:2px solid var(--gold); padding:.1rem 0 .1rem .7rem; margin:.2rem 0 .9rem;
+}
+.note b{color:var(--ink); font-weight:600}
+.note details{margin-top:.45rem}
+.note summary{color:var(--gold); cursor:pointer; list-style:none; font-size:.82rem;
+  min-height:1.6rem; display:flex; align-items:center}
+.note summary::-webkit-details-marker{display:none}
+.note summary::after{content:"›"; margin-left:.35rem; transition:transform .18s}
+.note details[open] summary::after{transform:rotate(90deg)}
+.note details p{margin:.45rem 0 0; color:var(--dim)}
+.note details p + p{margin-top:.5rem}
+.count{color:var(--dim); font-size:.85rem; text-align:right; margin:.1rem 0 .3rem}
+.count.full{color:var(--gold)}
+
+/* ---------- toast: what that just did to you ---------- */
+#toast{
+  position:fixed; left:50%; bottom:calc(1rem + env(safe-area-inset-bottom));
+  transform:translate(-50%,140%); z-index:12; width:min(92vw,480px);
+  background:#2b2436; border:1px solid var(--line); border-radius:13px;
+  padding:.7rem .85rem; transition:transform .25s ease-out; box-shadow:0 8px 28px #0009;
+}
+#toast.up{transform:translate(-50%,0)}
+#toast .h{font-weight:600; font-size:.95rem}
+#toast .l{font-size:.85rem; margin-top:.25rem}
+#toast .l.g{color:var(--good)} #toast .l.w{color:var(--warn)}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="namerow"><h1 id="hName">—</h1></div>
+    <div class="subtitle" id="hSub">—</div>
+    <div class="claimed"><div class="pips" id="hPips"></div><b id="hClaim"></b></div>
+  </header>
+  <main id="sheet"></main>
+</div>
+<div id="scrim"></div>
+<section id="drawer" aria-modal="true">
+  <div class="dhead"><div class="grab"></div><h2 id="dTitle"></h2><p id="dSub"></p></div>
+  <div class="dbody" id="dBody"></div>
+  <div class="dfoot">
+    <button class="btn" id="dCancel">Leave it</button>
+    <button class="btn go" id="dOk">Make it mine</button>
+  </div>
+</section>
+<div id="toast"><div class="h" id="tH"></div><div id="tL"></div></div>
+
+<script>
+"use strict";
+/* ================================================================
+   the Effigy — creation is subtraction of a stranger.
+   You are handed a complete, legal, playable level-1 character you
+   did not make. Every row is editable. Nothing is ever blank.
+   ================================================================ */
+
+const ABIL = ["STR","DEX","CON","INT","WIS","CHA"];
+const ARRAY = [15,14,13,12,10,8];
+
+/* Species carries no ability scores — ruled 2026-08-17, and it is where 5e
+   itself went (2024 PHB: species grant no increases, background does).
+   Kept deliberately identical to the Summoning's table: these are sibling
+   toys under the Kiln's copy-never-depend rule, so the duplication is the
+   contract. If one moves, move the other in the same commit. */
+const SPECIES = {
+  human:    {name:"Human", speed:30, extraSkill:1,
+             trait:"Resourceful — one more skill than anyone else brings."},
+  elf:      {name:"High Elf", speed:30, elfCantrip:true,
+             trait:"Darkvision, keen senses, one wizard cantrip for free."},
+  dwarf:    {name:"Hill Dwarf", speed:25, hpBonus:1,
+             trait:"Darkvision, poison resilience, +1 hp every level."},
+  halfling: {name:"Lightfoot Halfling", speed:25, lucky:true,
+             trait:"Lucky — reroll a natural 1. Can hide behind bigger people."},
+};
+
+const REGIONS = {
+  harbor:   {name:"the Salt Harbor", skill:"Persuasion", lang:"Trade Cant",
+             common:["halfling","human"],
+             d:"Wharves, ledgers and everyone's second cousin."},
+  highland: {name:"the Highlands", skill:"Survival", lang:"Dwarvish",
+             common:["dwarf","human"],
+             d:"Long winters above the tree line."},
+  wood:     {name:"the Old Wood", skill:"Nature", lang:"Elvish",
+             common:["elf","halfling"],
+             d:"Older than the roads."},
+  spire:    {name:"the Spire City", skill:"Investigation", lang:"Thieves' Cant",
+             common:["human","elf"],
+             d:"Nine tiers, one law per tier."},
+};
+
+const SKILLS_ALL = ["Acrobatics","Animal Handling","Arcana","Athletics","Deception","History",
+  "Insight","Intimidation","Investigation","Medicine","Nature","Perception","Performance",
+  "Persuasion","Religion","Sleight of Hand","Stealth","Survival"];
+
+/* Which ability each skill leans on — without this a skill is a word. */
+const SKILL_ABIL = {
+  Acrobatics:"DEX", "Animal Handling":"WIS", Arcana:"INT", Athletics:"STR", Deception:"CHA",
+  History:"INT", Insight:"WIS", Intimidation:"CHA", Investigation:"INT", Medicine:"WIS",
+  Nature:"INT", Perception:"WIS", Performance:"CHA", Persuasion:"CHA", Religion:"INT",
+  "Sleight of Hand":"DEX", Stealth:"DEX", Survival:"WIS",
+};
+
+/* ----------------------------------------------------------------
+   GLOSS — written for someone who has never played D&D. Ruled
+   2026-08-17: assume a new player who does not know what any of this
+   is. Two tiers, so it is clear without being wordy — one plain
+   sentence always visible, and a tap for the rest if wanted.
+   ---------------------------------------------------------------- */
+const GLOSS = {
+  abilities:{
+    short:`The big number is the score. The small one is your <b>modifier</b> — what you add
+      to a dice roll you make with that ability.`,
+    title:"How rolling works",
+    more:[`Almost everything risky is settled by rolling a twenty-sided die and adding a
+      modifier. Higher totals succeed. That is the whole engine.`,
+      `The six scores say what you are naturally good at: <b>Strength</b> for force,
+      <b>Dexterity</b> for precision and speed, <b>Constitution</b> for stamina,
+      <b>Intelligence</b> for knowledge, <b>Wisdom</b> for noticing things, and
+      <b>Charisma</b> for dealing with people.`,
+      `10 is dead average and gives +0. Every 2 points above or below moves the modifier by
+      one, so a 14 is +2 and an 8 is −1.`],
+  },
+  skills:{
+    short:`A skill is something you have <b>practised</b>. Being trained in one adds
+      <b>+2</b> on top of the ability it uses.`,
+    title:"Why skills exist at all",
+    more:[`Abilities are broad. Skills are the narrow situations inside them — sneaking is
+      Dexterity, recalling an old story is Intelligence, spotting a liar is Wisdom.`,
+      `When a skill applies, you add its ability's modifier <i>and</i> your proficiency bonus,
+      which is +2 at level 1 and grows as you level.`,
+      `There is no wrong pick. Skills do not lock anything — they just make some rolls more
+      likely to land.`],
+  },
+  species:{
+    short:`What your character <b>is</b>. It gives a body and a few knacks, and it does not
+      touch your numbers.`,
+    title:"Species and ability scores",
+    more:[`Older editions of D&D added ability bonuses for being an elf or a dwarf. The 2024
+      rules dropped that: your increases come from your <b>background</b> instead — what you
+      did, rather than what you were born as.`,
+      `So pick the one you want to play. It changes your speed, your senses and a trick or
+      two, and nothing about what you are good at.`],
+  },
+  region:{
+    short:`Where your character grew up. It gives one skill and one language, and suggests
+      who your neighbours were.`,
+    title:"Is this a real D&D thing?",
+    more:[`Not as its own line on the official sheet — this is a small addition, splitting
+      "where you are from" apart from "what you are".`,
+      `The suggestion is only a suggestion. Any species can come from anywhere.`],
+  },
+  class:{
+    short:`What your character <b>does</b>. It decides your hit points, what you are trained
+      in, and whether you cast spells.`,
+    title:"Picking a first class",
+    more:[`<b>Fighter</b> is the straightforward one: most hit points, hits hardest, no
+      spell rules to learn. A good first character.`,
+      `<b>Wizard</b> is the fragile one with the widest bag of tricks — you prepare spells
+      from a book and pick your moment.`,
+      `<b>Cleric</b> sits between them: armour and a weapon, plus healing and support magic.`,
+      `You can change this at any point here. Nothing is filed anywhere.`],
+  },
+  background:{
+    short:`What your character <b>did</b> before adventuring. It gives two skills and your
+      ability increases.`,
+    title:"Where your +2 and +1 go",
+    more:[`Each background lists three abilities. The +2 goes to the highest of those three
+      on your sheet and the +1 to the next, so the increases follow the character you are
+      already building.`,
+      `This is where the 2024 rules put ability increases — on what you did with your life,
+      not on the species you were born into.`],
+  },
+  spells:{
+    short:`<b>Cantrips</b> are small spells you can cast forever. The others are the ones you
+      have ready, and cost a slot to use.`,
+    title:"Slots, cantrips, and preparing",
+    more:[`A cantrip never runs out. Cast it as often as you like.`,
+      `Everything else spends a <b>spell slot</b>. At level 1 you have two, and you get them
+      back after a long rest — so a fight is about choosing when to spend them.`,
+      `A wizard writes spells in a book and keeps them forever. A cleric picks a fresh list
+      each morning from everything their god offers.`],
+  },
+  kit:{
+    short:`What you are carrying. Armour is the main thing here — it sets how hard you are to
+      hit.`,
+    title:"Armour class",
+    more:[`When something attacks you it rolls a die and tries to beat your <b>armour
+      class</b>. Higher is better.`,
+      `Heavy armour gives a good flat number. Light or no armour is lower but adds your
+      Dexterity, so a fast character is not far behind.`],
+  },
+  name:{ short:`Whatever you like. Nothing depends on it.` },
+};
+
+function glossHTML(key){
+  const g = GLOSS[key];
+  if (!g) return "";
+  return `<div class="note">${g.short}${g.more ? `
+    <details><summary>${g.title}</summary>
+      ${g.more.map(p=>`<p>${p}</p>`).join("")}
+    </details>` : ""}</div>`;
+}
+
+const CLASSES = {
+  wizard: {
+    name:"Wizard", hitDie:6, key:"INT", saves:["INT","WIS"], skillPick:2,
+    skills:["Arcana","History","Insight","Investigation","Medicine","Religion"],
+    caster:"arcane", cantrips:3, spellsKnown:6, slots:2,
+    blurb:"A book, six spells in it, and six hit points.",
+    kits:[{id:"scholar",name:"Quarterstaff, spellbook, scholar's pack",ac:10,dex:true},
+          {id:"component",name:"Dagger, component pouch, explorer's pack",ac:10,dex:true}],
+  },
+  cleric: {
+    name:"Cleric", hitDie:8, key:"WIS", saves:["WIS","CHA"], skillPick:2,
+    skills:["History","Insight","Medicine","Persuasion","Religion"],
+    caster:"divine", cantrips:3, spellsKnown:0, slots:2, prepares:true,
+    blurb:"Armour, a mace, and a god who answers.",
+    kits:[{id:"mace",name:"Mace, scale mail, shield, priest's pack",ac:16},
+          {id:"warhammer",name:"Warhammer, chain mail, holy symbol",ac:16}],
+    choice:{field:"domain", label:"Divine Domain", why:"the god you actually serve",
+      opts:[
+        {id:"life",  name:"Life",  d:"Heavy armour. Your healing always overshoots."},
+        {id:"light", name:"Light", d:"Free Light + Sacred Flame, and a flare that blinds."},
+        {id:"war",   name:"War",   d:"Martial weapons, heavy armour, a bonus attack."},
+      ]},
+  },
+  fighter: {
+    name:"Fighter", hitDie:10, key:"STR", saves:["STR","CON"], skillPick:2,
+    skills:["Acrobatics","Animal Handling","Athletics","History","Insight","Intimidation",
+            "Perception","Survival"],
+    caster:null, blurb:"Ten hit points and a second wind.",
+    kits:[{id:"plate",name:"Chain mail, longsword, shield, dungeoneer's pack",ac:18},
+          {id:"bow",name:"Leather, longbow, two handaxes, explorer's pack",ac:11,dex:true}],
+    choice:{field:"style", label:"Fighting Style", why:"how you actually fight",
+      opts:[
+        {id:"archery",  name:"Archery",  d:"+2 to hit with ranged weapons."},
+        {id:"defense",  name:"Defense",  d:"+1 AC while you wear armour."},
+        {id:"dueling",  name:"Dueling",  d:"+2 damage with one weapon and a free hand."},
+        {id:"gwf",      name:"Great Weapon", d:"Reroll 1s and 2s on two-handed damage."},
+      ]},
+  },
+};
+
+const SPELLS = {
+  arcane:{
+    cantrip:[["Fire Bolt","120ft, 1d10 fire, and it never runs out"],
+             ["Ray of Frost","1d8 cold and they move slower"],
+             ["Mage Hand","A hand, 30ft away, that does what hands do"],
+             ["Minor Illusion","A sound or an object, if nobody looks hard"],
+             ["Prestidigitation","Small nonsense, endlessly"],
+             ["Light","A bright object, 20ft, for an hour"]],
+    lvl1:[["Magic Missile","3 darts, 1d4+1 each, and they never miss"],
+          ["Shield","+5 AC as a reaction, after you see the roll"],
+          ["Burning Hands","15ft cone, 3d6 fire, everything in it"],
+          ["Sleep","5d8 hit points of creatures simply stop"],
+          ["Mage Armor","13 + DEX for eight hours, no armour worn"],
+          ["Charm Person","They think of you as a friend, and know it later"],
+          ["Detect Magic","See the auras for ten minutes"],
+          ["Feather Fall","Five of you, falling slowly, as a reaction"]],
+  },
+  divine:{
+    cantrip:[["Sacred Flame","1d8 radiant, DEX save, cover does not help"],
+             ["Guidance","+1d4 to an ally's ability check"],
+             ["Spare the Dying","A dying creature stops dying"],
+             ["Thaumaturgy","Your voice booms; flames bend; the earth shakes a little"],
+             ["Light","A bright object, 20ft, for an hour"]],
+    lvl1:[["Cure Wounds","1d8 + WIS, by touch"],
+          ["Bless","Three allies, +1d4 to attacks and saves"],
+          ["Healing Word","1d4 + WIS at 60ft, as a bonus action"],
+          ["Guiding Bolt","4d6 radiant and the next attack has advantage"],
+          ["Shield of Faith","+2 AC on one creature for ten minutes"],
+          ["Command","One word. They obey it for one turn"]],
+  },
+};
+
+/* Background carries the +2/+1 now — see SPECIES above. */
+const BACKGROUNDS = {
+  acolyte:  {name:"Acolyte",  skills:["Insight","Religion"],      abil:["INT","WIS","CHA"], d:"You served at a temple and still know the words."},
+  criminal: {name:"Criminal", skills:["Deception","Stealth"],     abil:["DEX","CON","INT"], d:"You have a contact who is still alive."},
+  soldier:  {name:"Soldier",  skills:["Athletics","Intimidation"],abil:["STR","DEX","CON"], d:"You held a rank and people still use it."},
+  sage:     {name:"Sage",     skills:["Arcana","History"],        abil:["CON","INT","WIS"], d:"You know where to find out anything."},
+};
+
+const NAMES = ["Ysolde","Bram","Kessa","Orin","Halvard","Nyx","Perrin","Sable","Dain","Verity",
+               "Cato","Mirren","Oskar","Lune","Aldric","Thessa"];
+
+/* ================================================================
+   State. `owned` is the only progress in the toy: which parts of
+   this stranger you have claimed. Everything else was rolled.
+   ================================================================ */
+const FIELDS = ["name","region","species","class","background","abilities","skills","spells","kit"];
+let S = null;
+
+/* Humans trade the old +1-to-everything for one more skill — species has
+   to stay worth choosing once it stops touching the numbers. Mirrors the
+   Summoning's helper of the same name. */
+function skillPick(){
+  const C = S && S.class && CLASSES[S.class];
+  if (!C) return 0;
+  return C.skillPick + ((S.species && SPECIES[S.species].extraSkill) || 0);
+}
+
+function rand(a){ return a[Math.floor(Math.random()*a.length)] }
+function shuffled(a){ const c=a.slice(); for(let i=c.length-1;i>0;i--){
+  const j=Math.floor(Math.random()*(i+1)); [c[i],c[j]]=[c[j],c[i]] } return c }
+
+/* ---------------------------------------------------------------
+   Arrival from the Summoning. A summoned character is not a stranger —
+   you chose every part of it — so every pip lands already lit, and the
+   ownership meter reads 9/9 on entry. That is the honest reading of
+   what the meter measures, and it is what makes one meter serve both
+   doors: rolled-a-stranger starts empty, summoned starts full.
+   --------------------------------------------------------------- */
+function fromHash(){
+  const m = /[#&]c=([A-Za-z0-9\-_]+)/.exec(location.hash || "");
+  if (!m) return null;
+  try {
+    const json = decodeURIComponent(escape(atob(
+      m[1].replace(/-/g,"+").replace(/_/g,"/"))));
+    const c = JSON.parse(json);
+    if (c.v !== 1 || !CLASSES[c.class] || !SPECIES[c.species]) return null;
+    S = {
+      name:c.name || "Unnamed", region:c.region, species:c.species, class:c.class,
+      background:c.background, assign:c.assign || {},
+      skills:c.skills || [], cantrips:c.cantrips || [], spells:c.spells || [],
+      style:c.style || null, domain:c.domain || null, kit:c.kit,
+      elfCantrip:c.elfCantrip || null,
+      owned: new Set(FIELDS),          // all of it is yours; you made it
+      summoned: true,
+    };
+    refit("rolled");                   // repair anything the schemas disagree on
+    return S;
+  } catch (e) { return null }
+}
+
+function rollStranger(){
+  const klass = rand(Object.keys(CLASSES));
+  const s = {
+    name: rand(NAMES),
+    region: rand(Object.keys(REGIONS)),
+    species: rand(Object.keys(SPECIES)),
+    class: klass,
+    background: rand(Object.keys(BACKGROUNDS)),
+    assign: {},            // ABIL -> array value
+    skills: [],            // class skills chosen
+    cantrips: [], spells: [],
+    style:null, domain:null, kit:null,
+    owned: new Set(),
+  };
+  const vals = shuffled(ARRAY);
+  ABIL.forEach((a,i)=> s.assign[a]=vals[i]);
+  S = s;
+  refit("rolled");         // make the stranger legal for their class
+  return s;
+}
+
+/* ---------------------------------------------------------------
+   refit() — the one place that repairs the sheet after a change.
+   ONE FACT, ONE OWNER: nothing else is allowed to decide what is
+   legal. Returns the list of things it had to take away.
+   --------------------------------------------------------------- */
+function refit(reason){
+  const C = CLASSES[S.class], lost = [];
+
+  // class skills: keep the ones this class can still take, top up at random
+  const bg = BACKGROUNDS[S.background].skills;
+  const keep = S.skills.filter(k => C.skills.includes(k) && !bg.includes(k));
+  const dropped = S.skills.filter(k => !keep.includes(k));
+  if (dropped.length && reason!=="rolled") lost.push(...dropped.map(d=>`${d} — not a ${C.name} skill`));
+  S.skills = keep;
+  const pool = shuffled(C.skills.filter(k=>!S.skills.includes(k) && !bg.includes(k)));
+  while (S.skills.length < skillPick() && pool.length) S.skills.push(pool.pop());
+
+  // spells
+  if (!C.caster) {
+    if (S.cantrips.length||S.spells.length) lost.push(`every spell you knew — ${C.name}s cast nothing`);
+    S.cantrips=[]; S.spells=[];
+  } else {
+    const list = SPELLS[C.caster];
+    const cnames = list.cantrip.map(x=>x[0]), snames = list.lvl1.map(x=>x[0]);
+    const badC = S.cantrips.filter(n=>!cnames.includes(n));
+    const badS = S.spells.filter(n=>!snames.includes(n));
+    if ((badC.length+badS.length) && reason!=="rolled")
+      lost.push(`${badC.length+badS.length} spell${badC.length+badS.length>1?"s":""} not on the ${C.name} list`);
+    S.cantrips = S.cantrips.filter(n=>cnames.includes(n));
+    S.spells   = S.spells.filter(n=>snames.includes(n));
+    const cp = shuffled(cnames.filter(n=>!S.cantrips.includes(n)));
+    while (S.cantrips.length < C.cantrips && cp.length) S.cantrips.push(cp.pop());
+    const wantS = C.prepares ? preparedCount() : C.spellsKnown;
+    const sp = shuffled(snames.filter(n=>!S.spells.includes(n)));
+    while (S.spells.length < wantS && sp.length) S.spells.push(sp.pop());
+    if (S.spells.length > wantS) S.spells = S.spells.slice(0, wantS);
+  }
+
+  // the class's one signature choice
+  ["style","domain"].forEach(f=>{
+    const wants = C.choice && C.choice.field===f;
+    if (!wants && S[f]) { lost.push(`your ${f}`); S[f]=null; }
+    if (wants && !C.choice.opts.some(o=>o.id===S[f])) S[f]=rand(C.choice.opts).id;
+  });
+
+  // kit
+  if (!C.kits.some(k=>k.id===S.kit)) {
+    if (S.kit && reason!=="rolled") lost.push("your gear — a different class carries different things");
+    S.kit = rand(C.kits).id;
+  }
+  return lost;
+}
+
+function preparedCount(){
+  const C = CLASSES[S.class];
+  if (!C || !C.prepares) return 0;
+  return Math.max(1, mod(score(C.key)) + 1);
+}
+
+/* --------- derivation: also one owner --------- */
+/* Species contributes nothing; the +2/+1 comes from the background, aimed
+   at the two of its three abilities you already scored highest. Aiming by
+   current scores rather than by a build id is what lets an EDITED sheet
+   keep a sensible answer after any swap. */
+function bgBonus(){
+  const B = BACKGROUNDS[S.background];
+  if (!B) return {};
+  const ranked = B.abil.slice().sort((x,y)=> (S.assign[y]||0)-(S.assign[x]||0));
+  return {[ranked[0]]:2, [ranked[1]]:1};
+}
+function score(a){ return (S.assign[a]||0) + (bgBonus()[a]||0) }
+function mod(v){ return Math.floor((v-10)/2) }
+function acFrom(kit){
+  let ac = kit ? kit.ac : 10;
+  if (!kit || kit.dex) ac = (kit?kit.ac:10) + mod(score("DEX"));
+  if (S.style==="defense") ac += 1;
+  return ac;
+}
+function derive(){
+  const C = CLASSES[S.class], R = SPECIES[S.species];
+  const hp = C.hitDie + mod(score("CON")) + (R.hpBonus||0);
+  const bgSkills = BACKGROUNDS[S.background].skills;
+  return {
+    C, R, hp: Math.max(1,hp),
+    /* AC comes from what you are wearing, and must match the Summoning's
+       derivation exactly — the handoff is what exposes any drift, and it
+       did: worn armour was being ignored here and a cleric arrived at 11
+       instead of 16. */
+    ac: acFrom(C.kits.find(k=>k.id===S.kit)),
+    prof: 2, speed: R.speed,
+    skills: S.skills, bgSkills,
+    spellDC: C.caster ? 8 + 2 + mod(score(C.key)) : null,
+  };
+}
+
+/* ================================================================
+   Render
+   ================================================================ */
+const $ = id => document.getElementById(id);
+
+function render(){
+  const D = derive();
+  $("hName").textContent = S.name;
+  $("hSub").textContent  = `${D.R.name} ${D.C.name} 1 · out of ${REGIONS[S.region].name}`;
+  const pips = FIELDS.map(f=>`<div class="pip ${S.owned.has(f)?"on":""}"></div>`).join("");
+  $("hPips").innerHTML = pips;
+  $("hClaim").textContent = `${S.owned.size}/${FIELDS.length} yours`;
+
+  const stats = ABIL.map(a=>{
+    const v = score(a), m = mod(v);
+    return `<div class="stat"><b>${a}</b><i>${v}</i><u>${m>=0?"+":""}${m}</u></div>`;
+  }).join("");
+
+  const sk = [
+    ...D.bgSkills.map(s=>`<span class="tag free">${s}</span>`),
+    ...D.skills.map(s=>`<span class="tag">${s}</span>`),
+  ].join("");
+
+  const spellRow = D.C.caster ? row("spells","Spells",
+      `${S.cantrips.join(", ")}<br><small>${S.spells.join(", ")}</small>`)
+    : row("spells", D.C.choice.label, cap(S[D.C.choice.field]||"—"));
+
+  $("sheet").innerHTML = `
+    <div class="vitals">
+      <div class="vital"><b>HIT POINTS</b><i>${D.hp}</i></div>
+      <div class="vital"><b>ARMOR CLASS</b><i>${D.ac}</i></div>
+      <div class="vital"><b>SPEED</b><i>${D.speed}</i></div>
+    </div>
+    ${row("name","Name",S.name)}
+    ${row("region","From",REGIONS[S.region].name,REGIONS[S.region].d)}
+    ${row("species","Species",D.R.name,D.R.trait)}
+    ${row("class","Class",D.C.name,D.C.blurb)}
+    ${row("background","Background",BACKGROUNDS[S.background].name,
+        `${BACKGROUNDS[S.background].d} <br>+2 / +1 across ${BACKGROUNDS[S.background].abil.join(", ")}`)}
+    ${row("abilities","Ability Scores",
+        `<span class="hidden"></span>`, null, `<div class="stats">${stats}</div>`)}
+    ${row("skills","Skills",`<div class="tags">${sk}</div>`)}
+    ${spellRow}
+    ${row("kit","Equipment",D.C.kits.find(k=>k.id===S.kit).name)}
+    <div class="hint">${S.summoned
+      ? "You made all of this. Change any of it — nothing here is filed anywhere."
+      : "Every row is yours to take. Nothing here is finished until you have said so."}</div>
+  `;
+  [...document.querySelectorAll(".row")].forEach(el=>
+    el.onclick = ()=> open(el.dataset.f));
+}
+function row(f,k,v,sub,extra){
+  return `<button class="row ${S.owned.has(f)?"mine":""}" data-f="${f}">
+    <div class="body"><div class="k">${k}</div><div class="v">${v||""}
+      ${sub?`<br><small>${sub}</small>`:""}</div>${extra||""}</div>
+    <div class="chev">›</div></button>`;
+}
+function cap(s){ return s ? s[0].toUpperCase()+s.slice(1) : s }
+
+/* ================================================================
+   Drawer — every option states what it GIVES and what it COSTS,
+   computed live, on the decision side of the tap.
+   ================================================================ */
+let draft = null, field = null;
+
+function open(f){
+  field = f; draft = null;
+  const D = derive();
+  const T = {
+    name:["Name","The one thing that was always going to be yours"],
+    region:["Where you are from","A place, not a people — it suggests, it never decides"],
+    species:["Species","A body, not a build. Nothing here touches your numbers"],
+    class:["Class","Changes almost everything else"],
+    background:["Background","Two skills you keep whatever else changes"],
+    abilities:["Ability Scores","Tap a score, then the value you want in it"],
+    skills:[`Skills`,`${D.C.name}s pick ${skillPick()}. Your background's two are free`],
+    spells:D.C.caster?["Spells","Cantrips are forever; the rest is today's list"]
+                     :[D.C.choice.label,`Pick ${D.C.choice.why}`],
+    kit:["Equipment","What you walked in carrying"],
+  }[f];
+  $("dTitle").textContent = T[0]; $("dSub").textContent = T[1];
+  $("dBody").innerHTML = bodyFor(f);
+  wire(f);
+  $("scrim").classList.add("up"); $("drawer").classList.add("up");
+  $("dBody").scrollTop = 0;
+  sync();
+}
+function close(){ $("scrim").classList.remove("up"); $("drawer").classList.remove("up"); }
+
+function bodyFor(f){
+  const D = derive();
+  if (f==="name")
+    return glossHTML("name") + `<input class="name" id="nameIn" value="${S.name}" maxlength="24"
+              autocomplete="off" spellcheck="false">`;
+
+  if (f==="region")
+    return glossHTML("region") + Object.entries(REGIONS).map(([id,R])=>
+      opt(id, S.region===id, R.name, R.d,
+        [`${R.skill} · speaks ${R.lang}`,
+         `Mostly ${R.common.map(c=>SPECIES[c].name).join(" and ")}`], [])).join("");
+
+  if (f==="species")
+    return glossHTML("species") + Object.entries(SPECIES).map(([id,R])=>{
+      /* No ability line here any more — the whole point is that there is
+         nothing to report. What is left is what the body actually does. */
+      const dHp = (CLASSES[S.class].hitDie + mod(score("CON")) + (R.hpBonus||0)) - D.hp;
+      const gives = [R.extraSkill ? `${R.extraSkill} more skill` : null,
+                     dHp ? `${dHp>0?"+":""}${dHp} hp` : null,
+                     `speed ${R.speed}`].filter(Boolean);
+      const home = S.region && REGIONS[S.region].common.includes(id)
+        ? [`Common in ${REGIONS[S.region].name}`] : [];
+      return opt(id, S.species===id, R.name, R.trait, gives.concat(home), []);
+    }).join("");
+
+  if (f==="class")
+    return glossHTML("class") + Object.entries(CLASSES).map(([id,C])=>{
+      if (id===S.class) return opt(id,true,C.name,C.blurb,
+        [`d${C.hitDie} hit die · saves ${C.saves.join(" & ")}`],[]);
+      const cost = costOfClass(id);
+      return opt(id,false,C.name,C.blurb,
+        [`d${C.hitDie} hit die · saves ${C.saves.join(" & ")}`
+         + (C.caster?` · ${C.cantrips} cantrips`:"")], cost);
+    }).join("");
+
+  if (f==="background")
+    return glossHTML("background") + Object.entries(BACKGROUNDS).map(([id,B])=>{
+      const clash = B.skills.filter(s=>S.skills.includes(s));
+      return opt(id,S.background===id,B.name,B.d,[B.skills.join(" + ")+" for free"],
+        clash.length && S.background!==id
+          ? [`${clash.join(" & ")} would be doubled up — you'd re-pick`] : []);
+    }).join("");
+
+  if (f==="abilities") return abilBody();
+
+  if (f==="skills"){
+    const C = D.C, bg = D.bgSkills;
+    draft = draft || S.skills.slice();
+    const n = draft.length;
+    /* A skill name alone is a word. What makes it mean anything is the
+       ability it leans on and the number it actually produces. */
+    const line = (sk, have) => {
+      const ab = SKILL_ABIL[sk], tot = mod(score(ab)) + 2;
+      const num = `${tot>=0?"+":""}${tot}`;
+      /* "would" only where it is genuinely hypothetical. */
+      return `Uses ${ab} · ${have?`you roll ${num}`:`would roll ${num}`}`;
+    };
+    return glossHTML("skills") +
+      `<div class="count ${n===skillPick()?"full":""}">${n} of ${skillPick()} picked</div>` +
+      C.skills.map(s=>{
+        if (bg.includes(s)) return opt(s,true,s,line(s,true),[],[],true);
+        const on = draft.includes(s);
+        return opt(s,on,s,line(s,on),[],[]);
+      }).join("");
+  }
+
+  if (f==="spells"){
+    const C = D.C;
+    if (!C.caster)
+      return C.choice.opts.map(o=>opt(o.id,S[C.choice.field]===o.id,o.name,o.d,[],[])).join("");
+    const L = SPELLS[C.caster];
+    const want = C.prepares ? preparedCount() : C.spellsKnown;
+    draft = draft || {c:S.cantrips.slice(), s:S.spells.slice()};
+    return `<div class="count ${draft.c.length===C.cantrips?"full":""}">Cantrips — ${draft.c.length} of ${C.cantrips}</div>`
+      + L.cantrip.map(([n,d])=>opt("c:"+n,draft.c.includes(n),n,d,[],[])).join("")
+      + `<div class="count ${draft.s.length===want?"full":""}">${C.prepares?"Prepared":"In your book"} — ${draft.s.length} of ${want}</div>`
+      + L.lvl1.map(([n,d])=>opt("s:"+n,draft.s.includes(n),n,d,[],[])).join("");
+  }
+
+  if (f==="kit")
+    return glossHTML("kit") + D.C.kits.map(k=>opt(k.id,S.kit===k.id,k.name,"",[],[])).join("");
+  return "";
+}
+
+function opt(id,sel,title,desc,gives,costs,disabled){
+  return `<button class="opt ${sel?"sel":""} ${disabled?"dis":""}" data-o="${id}" ${disabled?"disabled":""}>
+    <div class="t"><span>${title}</span>${sel?'<span class="mark">✓</span>':""}</div>
+    ${desc?`<div class="d">${desc}</div>`:""}
+    ${gives.filter(Boolean).map(g=>`<div class="gives"><span class="mark">+</span><span>${g}</span></div>`).join("")}
+    ${costs.filter(Boolean).map(c=>`<div class="costs"><span class="mark">−</span><span>${c}</span></div>`).join("")}
+  </button>`;
+}
+
+/* what changing class would take away — computed by asking refit() on a copy */
+function costOfClass(id){
+  const snap = clone(S);
+  S.class = id;
+  const lost = refit("probe");
+  S = snap;
+  return lost;
+}
+function clone(s){ const c = Object.assign({},s);
+  c.assign=Object.assign({},s.assign); c.skills=s.skills.slice();
+  c.cantrips=s.cantrips.slice(); c.spells=s.spells.slice();
+  c.owned=new Set(s.owned); return c }
+
+/* What an ability actually drives, and only where it drives a number that
+   is visible on this sheet. Three of six get a tag; the rest stay bare,
+   which is what keeps the tags worth reading. */
+function feeds(a){
+  const C = CLASSES[S.class];
+  const kit = C.kits.find(k=>k.id===S.kit);
+  if (a === C.key) return C.caster ? "spell DC" : "attack rolls";
+  if (a === "CON") return "hit points";
+  if (a === "DEX" && (!kit || kit.dex)) return "armour class";
+  return null;
+}
+
+function abilBody(){
+  draft = draft || {assign:Object.assign({},S.assign), pick:null};
+  /* Said once, because it is true of all six — the same rule the Summoning
+     learned. The per-tile tags then carry the part that DIFFERS. */
+  return glossHTML("abilities") + `<div class="arr">` + ABIL.map(a=>{
+    const snap = S.assign; S.assign = draft.assign;
+    const v = draft.assign[a], m = mod(v + (bgBonus()[a]||0));
+    S.assign = snap;
+    const f = feeds(a);
+    return `<button data-a="${a}" class="${draft.pick===a?"sel":""}">
+      <i>${a}</i><b>${v}</b>
+      <u>${m>=0?"+":""}${m}</u>
+      <i>${f||"&nbsp;"}</i></button>`;
+  }).join("") + `</div>
+  <div class="count">${draft.pick ? `Put which value in ${draft.pick}?` : "Tap an ability, then a value"}</div>` +
+  ARRAY.map(v=>{
+    const holder = ABIL.find(a=>draft.assign[a]===v && a!==draft.pick);
+    /* Show the modifier this value would have IN THE ABILITY BEING FILLED,
+       background bonus included — otherwise the list promises +2 and the
+       tile it lands in shows +3. */
+    const snap = S.assign; S.assign = draft.assign;
+    const bonus = draft.pick ? (bgBonus()[draft.pick]||0) : 0;
+    S.assign = snap;
+    const m = mod(v + bonus);
+    return `<button class="opt" data-v="${v}" ${draft.pick?"":"disabled"}>
+      <div class="t"><span>${v}</span><span class="mark">${m>=0?"+":""}${m}${
+        draft.pick && feeds(draft.pick) ? ` ${feeds(draft.pick)}` : ""}</span></div>
+      ${holder?`<div class="d">Currently ${holder}'s — they would swap</div>`:""}
+    </button>`;
+  }).join("");
+}
+
+function wire(f){
+  const D = derive();
+  if (f==="name"){ $("nameIn").oninput = sync; setTimeout(()=>$("nameIn").focus(),250); return }
+
+  [...$("dBody").querySelectorAll("[data-o]")].forEach(b=> b.onclick = ()=>{
+    const id = b.dataset.o;
+    if (f==="skills"){
+      const C = D.C;
+      if (draft.includes(id)) draft = draft.filter(x=>x!==id);
+      else if (draft.length < skillPick()) draft.push(id);
+      else { draft.shift(); draft.push(id); }        // full list swaps its oldest
+    } else if (f==="spells" && D.C.caster){
+      const [k,n] = [id[0], id.slice(2)];
+      const arr = k==="c" ? draft.c : draft.s;
+      const cap_ = k==="c" ? D.C.cantrips : (D.C.prepares?preparedCount():D.C.spellsKnown);
+      const i = arr.indexOf(n);
+      if (i>=0) arr.splice(i,1);
+      else { if (arr.length>=cap_) arr.shift(); arr.push(n) }
+    } else draft = id;
+    $("dBody").innerHTML = bodyFor(f); wire(f); sync();
+  });
+
+  [...$("dBody").querySelectorAll("[data-a]")].forEach(b=> b.onclick = ()=>{
+    draft.pick = draft.pick===b.dataset.a ? null : b.dataset.a;
+    $("dBody").innerHTML = bodyFor(f); wire(f); sync();
+  });
+  [...$("dBody").querySelectorAll("[data-v]")].forEach(b=> b.onclick = ()=>{
+    const v = +b.dataset.v, a = draft.pick; if (!a) return;
+    const other = ABIL.find(x=>draft.assign[x]===v);
+    if (other) draft.assign[other] = draft.assign[a];
+    draft.assign[a] = v; draft.pick = null;
+    $("dBody").innerHTML = bodyFor(f); wire(f); sync();
+  });
+}
+
+function sync(){
+  let ok = true;
+  if (field==="name") ok = $("nameIn").value.trim().length>0;
+  if (field==="skills") ok = draft.length === skillPick();
+  if (field==="spells" && derive().C.caster){
+    const C = derive().C;
+    ok = draft.c.length===C.cantrips &&
+         draft.s.length===(C.prepares?preparedCount():C.spellsKnown);
+  }
+  $("dOk").disabled = !ok;
+}
+
+$("dCancel").onclick = close;
+$("scrim").onclick   = close;
+$("dOk").onclick = ()=>{
+  const before = derive(), lost = [];
+  if (field==="name")       S.name = $("nameIn").value.trim();
+  if (field==="region")     S.region = draft || S.region;
+  if (field==="species")       S.species = draft || S.species;
+  if (field==="background") S.background = draft || S.background;
+  if (field==="kit")        S.kit = draft || S.kit;
+  if (field==="abilities")  S.assign = draft.assign;
+  if (field==="skills")     S.skills = draft.slice();
+  if (field==="class" && draft && draft!==S.class) S.class = draft;
+  if (field==="spells"){
+    if (derive().C.caster){ S.cantrips = draft.c.slice(); S.spells = draft.s.slice() }
+    else S[derive().C.choice.field] = draft || S[derive().C.choice.field];
+  }
+  lost.push(...refit("edit"));
+  S.owned.add(field);
+  // claiming your class means the parts it just rewrote are no longer yours
+  if (field==="class" && lost.length) ["skills","spells","kit"].forEach(f=>S.owned.delete(f));
+  close(); render();
+  told(field, lost, before);
+};
+
+/* the toast is the "what did that just do to me" half of the gate */
+let tTimer = null;
+function told(f, lost, before){
+  const D = derive();
+  const gained = [];
+  if (D.hp !== before.hp) gained.push(`${D.hp>before.hp?"+":""}${D.hp-before.hp} hit points`);
+  if (D.ac !== before.ac) gained.push(`${D.ac>before.ac?"+":""}${D.ac-before.ac} AC`);
+  if (D.speed !== before.speed) gained.push(`${D.speed-before.speed} speed`);
+  $("tH").textContent = `${cap(f==="kit"?"equipment":f)} is yours — ${S.owned.size}/${FIELDS.length}`;
+  $("tL").innerHTML =
+    (gained.length?`<div class="l g">+ ${gained.join(", ")}</div>`:"") +
+    lost.map(l=>`<div class="l w">− ${l}</div>`).join("");
+  $("toast").classList.add("up");
+  clearTimeout(tTimer);
+  tTimer = setTimeout(()=>$("toast").classList.remove("up"), lost.length?5200:2600);
+}
+
+/* debug hook — invariants get checked by computation, not by hoping */
+window.effigy = {
+  get state(){ return S },
+  derive,
+  reroll(){ rollStranger(); render() },
+  /* every class must be able to reach a legal sheet from every other class */
+  sweep(){
+    const out = [];
+    for (const from of Object.keys(CLASSES)) for (const to of Object.keys(CLASSES)){
+      rollStranger(); S.class = from; refit("probe");
+      S.class = to; const lost = refit("probe");
+      const D = derive(), C = D.C, bg = D.bgSkills;
+      const bad = [];
+      if (S.skills.length !== skillPick()) bad.push(`skills ${S.skills.length}/${skillPick()}`);
+      if (S.skills.some(s=>bg.includes(s))) bad.push("skill doubled with background");
+      if (C.caster){
+        if (S.cantrips.length !== C.cantrips) bad.push("cantrip count");
+        const want = C.prepares?preparedCount():C.spellsKnown;
+        if (S.spells.length !== want) bad.push(`spells ${S.spells.length}/${want}`);
+      } else if (S.cantrips.length||S.spells.length) bad.push("non-caster holding spells");
+      if (D.hp < 1) bad.push("hp below 1");
+      /* the regression the handoff caught: AC must come from worn armour,
+         not from a bare 10+DEX for everyone. Two kits that differ in
+         armour must differ in AC. */
+      const acs = C.kits.map(k=>acFrom(k));
+      if (C.kits.some(k=>!k.dex) && new Set(acs).size===1 && acs[0]===10+mod(score("DEX")))
+        bad.push("AC ignoring worn armour");
+      out.push({from,to,lost:lost.length,bad});
+    }
+    /* restore whichever door we came in by — running the probe should not
+       silently replace a summoned character with a fresh stranger */
+    if (!fromHash()) rollStranger();
+    render();
+    return {fail: out.filter(o=>o.bad.length), all: out};
+  },
+};
+
+/* Two doors into the same sheet: arrive from the Summoning with a
+   character you made, or roll a stranger to edit into one. */
+if (!fromHash()) rollStranger();
+render();
+</script>
+</body>
+</html>
