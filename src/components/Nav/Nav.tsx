@@ -10,6 +10,7 @@ const DRAWER_ID = 'nav-drawer';
 
 const sectionLinks = [
   { href: '#about', label: 'About' },
+  { href: '#selected-work', label: 'Selected work' },
   { href: '#experience', label: 'Experience' },
   { href: '#projects', label: 'Projects' },
   { href: '#skills', label: 'Skills' },

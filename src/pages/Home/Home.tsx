@@ -83,6 +83,27 @@ const Home: React.FC = () => {
           </div>
         </section>
 
+        {resumeData.selectedWork && (
+          <section className="section" id="selected-work" aria-labelledby="selected-work-heading">
+            <div className="wrap">
+              <h2 className="section-heading" id="selected-work-heading">Selected work</h2>
+              <div className="exp-item exp-item--single">
+                <div className="exp-head">
+                  <div className="exp-id">
+                    <h3 className="exp-position">{resumeData.selectedWork.title}</h3>
+                  </div>
+                  <p className="exp-dates">{resumeData.selectedWork.period}</p>
+                </div>
+                <ul className="exp-bullets">
+                  {resumeData.selectedWork.bullets.map((line, i) => (
+                    <li key={i}>{line}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </section>
+        )}
+
         <section className="section" id="experience" aria-labelledby="experience-heading">
           <div className="wrap">
             <h2 className="section-heading" id="experience-heading">Experience</h2>

@@ -348,3 +348,8 @@
     text-align: left;
   }
 }
+
+.exp-item--single {
+  padding-top: 0;
+  border-top: 0;
+}
