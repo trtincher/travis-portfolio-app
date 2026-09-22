@@ -10,10 +10,13 @@ interface CardProps {
 }
 
 function Card({ title, description, image, url, github, software }: CardProps) {
+  const isPlayable = url.startsWith("/toys/");
+
   return (
     <article className="project-card">
       <img src={image} alt={`${title} screenshot`} className="project-media" />
       <div className="project-body">
+        {isPlayable && <p className="project-tag">Playable</p>}
         <h3 className="project-title">{title}</h3>
         <p className="project-stack">{software}</p>
         <p className="project-desc">{description}</p>

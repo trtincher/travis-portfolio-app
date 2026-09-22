@@ -1,0 +1,2246 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>the Step</title>
+
+<style>
+  :root {
+    --ink: #f2ede4;
+    --dim: #a6a093;
+    --panel: rgba(18, 20, 22, 0.82);
+    --edge: rgba(242, 237, 228, 0.16);
+    --on: rgba(196, 107, 255, 0.34);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: #14171a; color: var(--ink);
+    font: 15px/1.3 ui-sans-serif, -apple-system, system-ui, sans-serif;
+    user-select: none; -webkit-user-select: none;
+    overscroll-behavior: none;
+  }
+  canvas { display: block; touch-action: none; }
+
+  .hud { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
+  .hud > * { pointer-events: auto; }
+  [hidden] { display: none !important; }   /* .corner's display: flex beats it otherwise */
+
+  .corner { position: absolute; display: flex; gap: 8px; align-items: center; }
+  .tl {
+    top: max(12px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left));
+    flex-direction: column; align-items: flex-start;
+  }
+  /* Altitude wants a vertical axis, but the right edge mid-screen is where the
+     board is and the bottom is now three rows of controls — so it hangs under
+     the camera button, in the one corner nothing else uses. */
+  .tr {
+    top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right));
+    flex-direction: column; align-items: flex-end;
+  }
+  /* Everything contextual lives in one bottom stack, which grows upward as an
+     action needs more of it. The altitude stepper sits to its right so the two
+     never fight for the same row. */
+  .bl {
+    bottom: max(14px, env(safe-area-inset-bottom)); left: max(12px, env(safe-area-inset-left));
+    right: 88px; flex-direction: column; align-items: flex-start; gap: 8px;
+  }
+  .br { bottom: max(14px, env(safe-area-inset-bottom)); right: max(12px, env(safe-area-inset-right)); }
+  /* Switching how the camera behaves is a thing you reach for mid-look, so it
+     sits on the board's own edge rather than inside a menu. Centred on the map
+     area, which the LIFT puts above the middle of the screen. */
+  /* A pull-tab on the board's own edge: half a circle with its flat side flush
+     to the screen, so it reads as belonging to the frame rather than floating
+     on the board. Small, because it is a switch and not a destination. */
+  .rm {
+    top: 40%; right: 0; transform: translateY(-50%);
+    flex-direction: column; align-items: flex-end; gap: 6px;
+  }
+  .rm.left { right: auto; left: 0; align-items: flex-start; }
+  .tab {
+    width: 34px; min-width: 34px; height: 64px; padding: 0; font-size: 17px;
+    border-radius: 64px 0 0 64px; border-right: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .rm.left .tab { border-radius: 0 64px 64px 0; border-right: 1px solid var(--edge); border-left: 0; }
+  /* The commit sits above the mode chips rather than beside them — it is the
+     only coloured control and the only one that appears and disappears. */
+  .primary {
+    background: #ffc247; color: #1a1408; border-color: #ffd98a;
+    min-width: 120px; font-size: 16px; font-weight: 700;
+  }
+  .primary:active { background: #ffd98a; }
+  /* armed: this attack catches one of your own, and wants asking twice */
+  .primary.warn { background: #e8544a; color: #fff4f2; border-color: #ff8f86; }
+  .primary.warn:active { background: #ff8f86; }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .col { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+
+  button {
+    min-height: 48px; min-width: 48px; padding: 0 14px;
+    background: var(--panel); color: var(--ink);
+    border: 1px solid var(--edge); border-radius: 12px;
+    font: inherit; font-weight: 600; letter-spacing: 0.01em;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    touch-action: manipulation; cursor: pointer;
+  }
+  button:active { background: rgba(255, 209, 102, 0.22); }
+  button:disabled { opacity: 0.32; }
+  button .k { color: var(--dim); font-weight: 500; }
+  button[aria-pressed="true"] { background: var(--on); border-color: rgba(196, 107, 255, 0.6); }
+  .chip { min-height: 44px; padding: 0 10px; font-size: 14px; }
+
+  .title {
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 12px;
+    padding: 8px 12px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  .title b { font-size: 15px; letter-spacing: 0.02em; }
+  .title span { display: block; color: var(--dim); font-size: 13px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+  #altNum {
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 12px;
+    padding: 6px 0; width: 64px; text-align: center;
+    font-weight: 700; font-variant-numeric: tabular-nums;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  #altNum small { display: block; color: var(--dim); font-weight: 500; font-size: 11px; }
+
+  /* The target list. Tapping the board fails you when a target is behind a wall,
+     tiny at the horizon, or simply not visible from this angle — a list never
+     has that problem, so it is the answer to occlusion rather than a shortcut. */
+  #targets {
+    width: min(300px, calc(100vw - 24px));
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 12px;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    padding: 4px; display: flex; flex-direction: column; gap: 2px;
+  }
+  /* Collapsed by default: an open list covers the very board it is projecting
+     onto, which would defeat the point of showing the move at all. */
+  /* Capped to roughly the height of the button rows it stands in for, so the
+     board is never covered — the list swaps places with the controls rather
+     than growing over the thing it is describing. */
+  #targetRows {
+    display: flex; flex-direction: column; gap: 2px;
+    max-height: 132px; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  }
+  .trow {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    min-height: 42px; padding: 0 10px; border: 0; border-radius: 9px;
+    background: transparent; text-align: left; font: inherit; color: var(--ink);
+  }
+  .trow:active { background: rgba(255, 209, 102, 0.18); }
+  .trow[aria-pressed="true"] { background: var(--on); }
+  .trow .dot { width: 12px; height: 12px; border-radius: 50%; flex: 0 0 auto; }
+  .trow b { font-weight: 600; }
+  .trow .why { margin-left: auto; color: var(--dim); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .trow .why.now { color: #a8e6ff; }
+  .trow .why.move { color: #ffd166; }
+
+  /* Camera and reset are set-and-forget, so they fold away behind one glyph
+     rather than standing on the board for the whole session. */
+  /* The whole board at a glance, with a draggable window showing what the camera
+     has. Small enough to live in the empty top corner, big enough to drag. */
+  #mini {
+    width: 112px; height: 112px; touch-action: none;
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 10px;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+
+  #menu {
+    display: flex; flex-direction: column; gap: 6px; align-items: stretch;
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 12px;
+    padding: 6px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  #menu button { background: transparent; border-color: transparent; }
+
+  /* The terrain rows live in the menu with the other set-and-forget switches.
+     The sliders apply on release; every control here answers with a fresh board. */
+  #menu .mlab {
+    color: var(--dim); font-size: 12px; font-weight: 600; letter-spacing: 0.06em;
+    text-transform: uppercase; padding: 8px 10px 2px;
+    border-top: 1px solid var(--edge); margin-top: 4px;
+  }
+  #menu .mrow { display: flex; gap: 4px; }
+  #menu .mrow .chip { flex: 1; min-width: 0; padding: 0 8px; }
+  #menu .mslide { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 10px; }
+  #menu .mslide .k { color: var(--dim); font-size: 13px; font-weight: 500; width: 66px; }
+  #menu .mslide input { flex: 1; min-width: 100px; accent-color: #ffc247; }
+
+  #toast {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    bottom: calc(238px + env(safe-area-inset-bottom));
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 999px;
+    padding: 10px 18px; font-weight: 600; white-space: nowrap;
+    opacity: 0; transition: opacity 160ms ease; pointer-events: none;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  #toast.on { opacity: 1; }
+</style>
+
+<div class="hud">
+  <div class="corner tl">
+    <div class="title">
+      <b>the Step</b>
+      <span id="readout">move 6</span>
+    </div>
+    <canvas id="mini" width="200" height="200"></canvas>
+  </div>
+
+  <div class="corner tr">
+    <button id="menuBtn">&#9776;</button>
+    <!-- settings: things you set once and stop thinking about -->
+    <div id="menu" hidden>
+      <button id="sideBtn"><span class="k">controls</span>&nbsp;right</button>
+      <button id="miniBtn"><span class="k">overview</span>&nbsp;on</button>
+      <button id="resetBtn">reset</button>
+      <div class="mlab">terrain</div>
+      <div class="mrow">
+        <button class="chip" data-terr="forest" aria-pressed="true">forest</button>
+        <button class="chip" data-terr="dungeon" aria-pressed="false">dungeon</button>
+      </div>
+      <div class="mrow">
+        <button class="chip" data-terr="building" aria-pressed="false">building</button>
+        <button class="chip" data-terr="streets" aria-pressed="false">streets</button>
+      </div>
+      <label class="mslide"><span class="k">obstacles</span><input id="densRange" type="range" min="0" max="100" value="45"></label>
+      <label class="mslide"><span class="k">hills</span><input id="hillRange" type="range" min="0" max="100" value="40"></label>
+      <label class="mslide"><span class="k">valleys</span><input id="valeRange" type="range" min="0" max="100" value="30"></label>
+      <button id="genBtn">new terrain</button>
+    </div>
+  </div>
+
+  <div class="corner rm" id="sideBox">
+    <button id="camBtn" class="tab">&#8635;</button>
+  </div>
+
+  <div class="corner br">
+    <div class="col" id="altBox" hidden>
+      <button id="altUp">&#9650;</button>
+      <div id="altNum">0<small>alt</small></div>
+      <button id="altDown">&#9660;</button>
+    </div>
+  </div>
+
+  <div class="corner bl">
+    <div id="targets" hidden>
+      <button class="trow" id="listClose"><b>&#9666;&nbsp;targets</b><span class="why" id="listCount"></span></button>
+      <div id="targetRows"></div>
+    </div>
+    <div class="row" id="partyRow"></div>
+    <div class="row" id="actRow">
+      <button class="chip" data-act="move" aria-pressed="true">move</button>
+      <button class="chip" data-act="melee" aria-pressed="false">melee</button>
+      <button class="chip" data-act="shoot" aria-pressed="false">ranged</button>
+      <button class="chip" data-act="aoe" aria-pressed="false">area</button>
+    </div>
+    <div class="row" id="shotRow" hidden>
+      <button class="chip" data-shots="1" aria-pressed="true">&times;1</button>
+      <button class="chip" data-shots="2" aria-pressed="false">&times;2</button>
+      <button class="chip" data-shots="3" aria-pressed="false">&times;3</button>
+    </div>
+    <div class="row" id="shapeRow" hidden>
+      <button class="chip" data-shape="sphere" aria-pressed="true">sphere</button>
+      <button class="chip" data-shape="cube" aria-pressed="false">cube</button>
+      <button class="chip" data-shape="circle" aria-pressed="false">circle</button>
+      <button class="chip" data-shape="cone" aria-pressed="false">cone</button>
+    </div>
+    <div class="row" id="modRow">
+      <button class="chip" id="modeBtn"><span class="k">move</span>&nbsp;walk</button>
+      <button class="chip" id="originBtn" hidden><span class="k">from</span>&nbsp;point</button>
+      <button class="chip" id="targetsBtn" hidden>targets</button>
+      <button id="goBtn" class="primary" hidden>go</button>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+</div>
+
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.169.0/build/three.module.js" } }
+</script>
+
+<script type="module">
+import * as THREE from 'three'
+
+// ---------------------------------------------------------------- the board
+//   .  low ground (0)   +  mid ground (1)   2  high ground (2)
+//   /  ramp 0→1 (0.5)   ^  ramp 1→2 (1.5)
+//   #  wall (3 — runs to the flight ceiling, never landable, never crossed,
+//                and the only thing that blocks sight)
+//
+// A wall band splits the board in two, pierced by exactly two 1-wide, 2-deep
+// corridors — one near you at x=4, one the long way round at x=9.
+// This authored board is the opening hand; the generator below deals new ones.
+let MAP = [
+  '......++++..........',
+  '...../++++..........',
+  '......++++..........',
+  '......++++....####..',
+  '####.####.....#..#..',
+  '####.####.....#..#..',
+  '..............#..#..',
+  '..............#..#..',
+  '..............#.##..',
+  '....................',
+  '...####.............',
+  '...#..#.............',
+  '...#..#.............',
+  '...##.#.............',
+  '....................',
+  '..........++++......',
+  '........./++++......',
+  '..........++++......',
+  '....................',
+  '....................',
+]
+
+const N = MAP.length
+const LEVEL_H = 0.85         // world units per level of elevation
+const MOVE = 6               // movement budget, refreshed on arrival
+const DIAG = 1.5             // a diagonal costs more, so reach reads as a shape
+const MAX_ALT = 3            // ceiling, in levels
+const VIEW = 10              // how much of the board fits on a phone at once
+const START = { x: 4, z: 7, a: 0 }
+
+const MELEE_REACH = 1.8      // Euclidean, so a diagonal one level up still counts
+const RANGE = 8              // for anything thrown, shot or placed
+const EYE = 0.5              // sight leaves and arrives half a level off the floor
+const SHAPE_SIZE = { sphere: 2, cube: 1, circle: 2, cone: 3 }  // radius / half-side / radius / length
+const CONE_COS = Math.cos(Math.atan(0.5))   // 5e's cone: as wide at the end as it is long
+
+const SURF = { '.': 0, '/': 0.5, '+': 1, '^': 1.5, '2': 2, '#': 3 }
+const LANDABLE = new Set([0, 1, 2])
+
+// Bodies on the board. A creature holds one cell at its own altitude — not its
+// whole column — so flying over a grounded one is free.
+// Everyone on the board is a unit. The party is simply the units you may take
+// control of, and "you" is a pointer into that list rather than a special kind
+// of entity — which is what lets control move without the rest of the toy
+// knowing anything has changed.
+const UNITS = [
+  { x: 4, z: 7, a: 0, team: 'ally' },    // the one you start on
+  { x: 4, z: 5, a: 0, team: 'ally' },    // two of your own, nose to tail,
+  { x: 4, z: 4, a: 0, team: 'ally' },    // plugging the near corridor
+  { x: 9, z: 5, a: 0, team: 'foe' },     // one plugging the far corridor
+  { x: 5, z: 2, a: 0, team: 'foe' },     // waiting past the far mouth of the near one
+  { x: 7, z: 2, a: 1, team: 'foe' },     // up on the ledge
+  { x: 7, z: 6, a: 2, team: 'foe' },     // hovering in open air, two levels up —
+  { x: 15, z: 5, a: 0, team: 'foe' },    // shut in the eastern room
+  { x: 4, z: 11, a: 0, team: 'foe' },    // shut in the southern one
+  { x: 11, z: 16, a: 1, team: 'foe' },   // out on the far ledge, off screen entirely
+]
+const PARTY = UNITS.filter((u) => u.team === 'ally')
+const HOME = UNITS.map((u) => ({ x: u.x, z: u.z, a: u.a }))
+
+const cell = (x, z) => (x < 0 || z < 0 || x >= N || z >= N ? null : MAP[z][x])
+const isWall = (x, z) => cell(x, z) === '#'
+const surf = (x, z) => SURF[cell(x, z)] ?? 0
+const k3 = (x, z, a) => `${x},${z},${a}`
+const yOf = (a) => a * LEVEL_H
+const bodyAt = (x, z, a) => UNITS.find((u) => u.x === x && u.z === z && u.a === a) || null
+const bodyBlocks = (x, z, a) => {
+  const b = bodyAt(x, z, a)
+  return !!b && b.team !== 'ally'
+}
+
+// ------------------------------------------------------------------- rules
+const NEIGHBORS = [
+  [1, 0], [-1, 0], [0, 1], [0, -1],
+  [1, 1], [1, -1], [-1, 1], [-1, -1],
+]
+const stepCost = (dx, dz) => (dx !== 0 && dz !== 0 ? DIAG : dx !== 0 || dz !== 0 ? 1 : 0)
+
+function canWalk(fx, fz, tx, tz) {
+  if (cell(tx, tz) === null || isWall(tx, tz)) return false
+  if (surf(tx, tz) - surf(fx, fz) > 0.5 + 1e-6) return false
+  const dx = tx - fx, dz = tz - fz
+  if (dx !== 0 && dz !== 0 && (isWall(fx + dx, fz) || isWall(fx, fz + dz))) return false
+  return true
+}
+
+function freeAt(x, z, a) {
+  if (cell(x, z) === null || a < 0 || a > MAX_ALT) return false
+  const s = surf(x, z)
+  return a > s || (a === s && LANDABLE.has(s))
+}
+
+const FLY_STEPS = []
+for (const [dx, dz] of NEIGHBORS) for (const da of [-1, 0, 1]) FLY_STEPS.push([dx, dz, da])
+FLY_STEPS.push([0, 0, 1], [0, 0, -1])
+
+// Cheapest-first flood out to MOVE, keeping parent pointers for path preview.
+function reachFrom(sx, sz, sa, flying) {
+  const cost = new Map([[k3(sx, sz, sa), 0]])
+  const prev = new Map()
+  const open = [[sx, sz, sa, 0]]
+
+  while (open.length) {
+    let best = 0
+    for (let i = 1; i < open.length; i++) if (open[i][3] < open[best][3]) best = i
+    const [x, z, a, c] = open.splice(best, 1)[0]
+    if (c > cost.get(k3(x, z, a)) + 1e-6) continue
+
+    for (const s of flying ? FLY_STEPS : NEIGHBORS) {
+      const [dx, dz] = s
+      const nx = x + dx, nz = z + dz
+      let na, nc
+
+      if (flying) {
+        na = a + s[2]
+        if (!freeAt(nx, nz, na)) continue
+        if (dx !== 0 && dz !== 0 && (!freeAt(x + dx, z, na) || !freeAt(x, z + dz, na))) continue
+        nc = c + stepCost(dx, dz) + Math.abs(s[2])
+      } else {
+        if (!canWalk(x, z, nx, nz)) continue
+        na = surf(nx, nz)
+        nc = c + stepCost(dx, dz)
+      }
+      if (bodyBlocks(nx, nz, na)) continue
+
+      if (nc > MOVE + 1e-6) continue
+      const k = k3(nx, nz, na)
+      if (cost.has(k) && cost.get(k) <= nc + 1e-6) continue
+      cost.set(k, nc)
+      prev.set(k, [x, z, a])
+      open.push([nx, nz, na, nc])
+    }
+  }
+  return { cost, prev }
+}
+
+function pathTo(field, x, z, a) {
+  const out = [[x, z, a]]
+  let k = k3(x, z, a)
+  while (field.prev.has(k)) {
+    const p = field.prev.get(k)
+    out.unshift(p)
+    k = k3(p[0], p[1], p[2])
+  }
+  return out
+}
+
+// ------------------------------------------------------------ line of sight
+// Terrain blocks sight; bodies do not. In 5e a creature in the way is cover,
+// not a wall, and cover is a whole other system — so this stays honest about
+// what it models. The trace is a straight march from eye to eye; a sample that
+// falls below its column's surface is inside the world, and that is the block.
+const A3 = new THREE.Vector3(), B3 = new THREE.Vector3(), P3 = new THREE.Vector3()
+const centre = (v, x, z, a) => v.set(x - (N - 1) / 2, yOf(a) + EYE, z - (N - 1) / 2)
+
+function traceSight(ax, az, aa, bx, bz, ba) {
+  centre(A3, ax, az, aa)
+  centre(B3, bx, bz, ba)
+  const steps = Math.max(4, Math.ceil(A3.distanceTo(B3) * 8))
+  for (let i = 1; i < steps; i++) {
+    P3.copy(A3).lerp(B3, i / steps)
+    const cx = Math.round(P3.x + (N - 1) / 2)
+    const cz = Math.round(P3.z + (N - 1) / 2)
+    if (cell(cx, cz) === null) continue
+    if (P3.y < yOf(surf(cx, cz)) - 0.02) return { clear: false, at: P3.clone() }
+  }
+  return { clear: true, at: B3.clone() }
+}
+// One centre-to-centre ray is too brittle: a line that merely grazes the corner
+// of a wall block reports no sight, and refusing a shot on a technicality that
+// nothing on screen explains is exactly the arbitrariness this board is for.
+// 5e's rule is that ANY unblocked line counts, so try the centre and four
+// parallel shifts and take the first that arrives.
+const SIGHT_SHIFTS = [[0, 0], [0.35, 0.35], [0.35, -0.35], [-0.35, 0.35], [-0.35, -0.35]]
+
+function bestSight(a, b) {
+  let blocked = null
+  for (const [ox, oz] of SIGHT_SHIFTS) {
+    const tr = traceSight(a.x + ox, a.z + oz, a.a, b.x + ox, b.z + oz, b.a)
+    if (tr.clear) return tr
+    if (!blocked) blocked = tr
+  }
+  return blocked
+}
+const canSee = (a, b) => bestSight(a, b).clear
+const dist3 = (a, b) => Math.hypot(a.x - b.x, a.z - b.z, a.a - b.a)
+
+// ---------------------------------------------------------------- targeting
+// The eligible set — what the blue overlay means. Moving, it is where you can
+// go; targeting, it is what you can pick. Same shape, same renderer, one idea.
+function computeField() {
+  if (S.act === 'move') return reachFrom(S.at.x, S.at.z, S.at.a, S.mode === 'fly')
+
+  const cost = new Map(), prev = new Map()
+  const reach = S.act === 'melee' ? MELEE_REACH : RANGE
+
+  // The field is the whole ENVELOPE — everywhere the attack could reach — not
+  // just the squares with someone in them. Showing only the targets made a bow
+  // look like it had a range of three squares.
+  for (let z = 0; z < N; z++) {
+    for (let x = 0; x < N; x++) {
+      for (let a = 0; a <= MAX_ALT; a++) {
+        if (!freeAt(x, z, a)) continue
+        if (x === S.at.x && z === S.at.z && a === S.at.a) continue
+        const t = { x, z, a }
+        const d = dist3(S.at, t)
+        if (d > reach + 1e-6) continue
+        if (S.act !== 'melee' && !canSee(S.at, t)) continue   // adjacent needs no sight
+        cost.set(k3(x, z, a), d)
+      }
+    }
+  }
+  return { cost, prev }
+}
+
+// Single-target attacks land on a creature; an area lands on a square.
+const canTarget = (x, z, a) =>
+  S.field.cost.has(k3(x, z, a)) && (S.act === 'aoe' || !!bodyAt(x, z, a))
+
+// Could this attack be made from that square, against that unit? Asked of the
+// square you are standing on, and of every square you could walk to.
+function legalFrom(c, t) {
+  if (dist3(c, t) > (S.act === 'melee' ? MELEE_REACH : RANGE) + 1e-6) return false
+  return S.act === 'melee' || canSee(c, t)   // adjacent needs no sight
+}
+
+// The cheapest square within this turn's movement from which the attack becomes
+// legal. This is the half of a target list that earns it: picking something you
+// cannot hit should answer "here is the move that would let you".
+function approach(t, moveField) {
+  let best = null
+  for (const [k, cost] of moveField.cost) {
+    if (best && cost >= best.cost) continue
+    const [x, z, a] = k.split(',').map(Number)
+    if (bodyAt(x, z, a)) continue
+    const c = { x, z, a }
+    if (!legalFrom(c, t)) continue
+    best = { cost, cell: c }
+  }
+  return best
+}
+
+// A square counts if the shape touches it AT ALL, not if its centre happens to
+// fall inside — round up, never down. Testing centres renders a radius-2 burst
+// as a plus sign, because every square the circle only partly covers is dropped.
+// For a ball this is exact: the nearest point of an axis-aligned cell is just
+// the per-axis distance shrunk by half a square.
+const near = (d) => Math.max(0, Math.abs(d) - 0.5)
+const CORNER = [-0.5, 0.5]
+
+// A cone has no such closed form, so sample the cell's eight corners: if any of
+// them is inside both the length and the spread, the cone clips that square.
+function coneTouches(dx, dz, da, dir, len) {
+  if (dx === 0 && dz === 0 && da === 0) return false   // 5e: the origin is not in the cone
+  for (const ox of CORNER) {
+    for (const oz of CORNER) {
+      for (const oy of CORNER) {
+        const px = dx + ox, pz = dz + oz, pa = da + oy
+        const d = Math.hypot(px, pz, pa)
+        if (d < 1e-6) return true
+        if (d > len + 1e-6) continue
+        if ((px * dir[0] + pz * dir[1] + pa * dir[2]) / d >= CONE_COS - 1e-6) return true
+      }
+    }
+  }
+  return false
+}
+
+// The four shapes, each a predicate over cells. Origin is either you or the
+// square you picked; a cone always needs a direction, which is the line from
+// you to that square — so a cone placed at range fires away from you.
+// Where the shape sits and which way it faces — shared by the cell test and by
+// the solid drawn on top of it, so they can never disagree.
+function aimGeometry() {
+  // While a move is being proposed, the caster is where they WOULD be standing —
+  // so a cone fans from there, not from here. Everything downstream (the cells,
+  // the solid, who it catches) then describes the shot you are actually offered.
+  const from = S.approach ? S.approach.cell : S.at
+  const aim = S.approach ? S.approach.target : S.aim
+  const O = S.origin === 'self' ? from : aim
+  if (S.act !== 'aoe' || !O) return null
+  if (S.shape !== 'cone') return { O, dir: null }
+  if (!aim) return null
+  const dx = aim.x - from.x, dz = aim.z - from.z, da = aim.a - from.a
+  const len = Math.hypot(dx, dz, da)
+  if (len < 1e-6) return null
+  return { O, dir: [dx / len, dz / len, da / len] }
+}
+
+function templateCells() {
+  const out = new Set()
+  const g = aimGeometry()
+  if (!g) return out
+  const { O, dir } = g
+  const size = SHAPE_SIZE[S.shape]
+
+  for (let z = 0; z < N; z++) {
+    for (let x = 0; x < N; x++) {
+      for (let a = 0; a <= MAX_ALT; a++) {
+        if (!freeAt(x, z, a)) continue
+        const dx = x - O.x, dz = z - O.z, da = a - O.a
+        let inside = false
+
+        if (S.shape === 'sphere') {
+          inside = Math.hypot(near(dx), near(dz), near(da)) <= size + 1e-6
+        } else if (S.shape === 'cube') {
+          inside = Math.abs(dx) <= size && Math.abs(dz) <= size && Math.abs(da) <= size
+        } else if (S.shape === 'circle') {
+          // a floor effect — it lies on the ground and has no height at all
+          inside = a === surf(x, z) && Math.hypot(near(dx), near(dz)) <= size + 1e-6
+        } else {
+          inside = coneTouches(dx, dz, da, dir, size)
+        }
+
+        // an area still cannot reach through a wall from where it goes off
+        if (inside && !(x === O.x && z === O.z && a === O.a) && !canSee(O, { x, z, a })) inside = false
+        if (inside) out.add(k3(x, z, a))
+      }
+    }
+  }
+  return out
+}
+
+const multi = () => S.act === 'melee' || S.act === 'shoot'
+
+// Darts, with repeats: three of them on one creature is three entries.
+function struck() {
+  if (multi()) return S.aims.map((t) => bodyAt(t.x, t.z, t.a)).filter(Boolean)
+  return UNITS.filter((u) => S.template.has(k3(u.x, u.z, u.a)))
+}
+
+function tally(list) {
+  const uniq = [...new Set(list)]   // three darts on one foe is still one foe
+  if (!uniq.length) return 'nothing caught'
+  const foes = uniq.filter((b) => b.team === 'foe').length
+  const allies = uniq.length - foes
+  const bits = []
+  if (foes) bits.push(`${foes} foe${foes > 1 ? 's' : ''}`)
+  if (allies) bits.push(`${allies} ${allies > 1 ? 'allies' : 'ally'}`)
+  return bits.join(', ')
+}
+
+function refuseTarget(x, z, a) {
+  const t = { x, z, a }
+  if (!freeAt(x, z, a)) return isWall(x, z) ? 'wall' : 'that is inside the ground'
+  if (S.act === 'melee') {
+    if (dist3(S.at, t) > MELEE_REACH) return 'too far to reach'
+    return 'nothing there to hit'
+  }
+  if (!canSee(S.at, t)) return 'no line of sight'
+  if (dist3(S.at, t) > RANGE) return 'out of range'
+  if (S.act === 'shoot') return 'nothing there to shoot'
+  return 'out of range'
+}
+
+// ------------------------------------------------------------------- scene
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' })
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
+renderer.shadowMap.enabled = true
+renderer.shadowMap.type = THREE.PCFSoftShadowMap
+document.body.appendChild(renderer.domElement)
+
+const scene = new THREE.Scene()
+scene.background = new THREE.Color(0x14171a)
+// Fog is relative to how far the camera has pulled back — a fixed range swallows
+// the whole board the moment the fit pushes the camera out on a portrait phone.
+scene.fog = new THREE.Fog(0x14171a, 20, 60)
+
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100)
+const FOCUS = new THREE.Vector3(0, 0.25, 0)
+
+scene.add(new THREE.HemisphereLight(0xbfd4ff, 0x2a2620, 0.85))
+const sun = new THREE.DirectionalLight(0xfff1d6, 1.05)
+sun.position.set(6, 12, 4)
+sun.castShadow = true
+sun.shadow.mapSize.set(2048, 2048)
+sun.shadow.camera.left = -14
+sun.shadow.camera.right = 14
+sun.shadow.camera.top = 14
+sun.shadow.camera.bottom = -14
+sun.shadow.camera.far = 44
+sun.shadow.bias = -0.0012
+scene.add(sun)
+
+const world = (x, z) => new THREE.Vector3(x - (N - 1) / 2, 0, z - (N - 1) / 2)
+
+// One palette per ground — colour and basic shape are the whole skin. No
+// textures, no models: the same six characters just dress for where they are.
+const PALETTES = {
+  authored: { '.': 0x5d6b5c, '/': 0x74705a, '+': 0x968b78, '^': 0x9d9077, '2': 0xa89c85, '#': 0x2c3237 },
+  forest:   { '.': 0x35492f, '/': 0x4f6039, '+': 0x5c7040, '^': 0x74804c, '2': 0x8b8f5c, '#': 0x2e5c36 },
+  dungeon:  { '.': 0x453f3a, '/': 0x524b44, '+': 0x5e564e, '^': 0x6a6157, '2': 0x776d60, '#': 0x211d1a },
+  building: { '.': 0x5d5142, '/': 0x6a5d4b, '+': 0x776852, '^': 0x83745b, '2': 0x8f7f64, '#': 0x362f2b },
+  streets:  { '.': 0x484c50, '/': 0x585d61, '+': 0x63686c, '^': 0x70757a, '2': 0x7e8388, '#': 0x22262d },
+}
+let SKIN = 'authored'
+const LV = ['.', '+', '2']            // the ground character for each level
+
+const WALL_TOP = 3
+const tileMeshes = []
+const jitter = (hex) => new THREE.Color(hex).multiplyScalar(0.93 + Math.random() * 0.14)
+
+// The board is rebuilt whole when the terrain changes — four hundred boxes is
+// nothing, and disposing the lot is simpler than diffing which tiles moved.
+function buildBoard() {
+  for (const m of tileMeshes) {
+    scene.remove(m)
+    m.geometry.dispose()
+    m.material.dispose()
+  }
+  tileMeshes.length = 0
+  const pal = PALETTES[SKIN]
+  const put = (mesh, x, z) => {
+    mesh.castShadow = true
+    mesh.receiveShadow = true
+    mesh.userData = { x, z }
+    scene.add(mesh)
+    tileMeshes.push(mesh)
+  }
+  for (let z = 0; z < N; z++) {
+    for (let x = 0; x < N; x++) {
+      const c = cell(x, z)
+      const p = world(x, z)
+
+      // In the forest a blocker is a tree: the floor it stands on runs at the
+      // neighbours' level, then a trunk and two cones. Mechanically it is
+      // still '#' — it blocks feet, flight and sight exactly like a wall.
+      if (c === '#' && SKIN === 'forest') {
+        let base = 0
+        for (const [dx, dz] of NEIGHBORS.slice(0, 4)) {
+          const n = cell(x + dx, z + dz)
+          if (n !== null && n !== '#') base = Math.max(base, Math.floor(surf(x + dx, z + dz)))
+        }
+        const gy = yOf(base)
+        const floor = new THREE.Mesh(
+          new THREE.BoxGeometry(0.94, gy + 0.6, 0.94),
+          new THREE.MeshLambertMaterial({ color: jitter(pal[LV[base]]) }),
+        )
+        floor.position.set(p.x, gy - (gy + 0.6) / 2, p.z)
+        put(floor, x, z)
+        const trunk = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.11, 0.15, 0.6, 7),
+          new THREE.MeshLambertMaterial({ color: jitter(0x5a4632) }),
+        )
+        trunk.position.set(p.x, gy + 0.3, p.z)
+        put(trunk, x, z)
+        const leaf = jitter(pal['#'])
+        const cone1 = new THREE.Mesh(new THREE.ConeGeometry(0.46, 1.1, 8), new THREE.MeshLambertMaterial({ color: leaf }))
+        cone1.position.set(p.x, gy + 1.05, p.z)
+        put(cone1, x, z)
+        const cone2 = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.8, 8), new THREE.MeshLambertMaterial({ color: leaf }))
+        cone2.position.set(p.x, gy + 1.7, p.z)
+        put(cone2, x, z)
+        continue
+      }
+
+      const top = yOf(c === '#' ? WALL_TOP : surf(x, z))
+      const h = top + 0.6
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(0.94, h, 0.94),
+        new THREE.MeshLambertMaterial({ color: jitter(pal[c]) }),
+      )
+      mesh.position.set(p.x, top - h / 2, p.z)
+      put(mesh, x, z)
+    }
+  }
+}
+buildBoard()
+
+// One pooled overlay set per meaning: blue is what you can pick, violet is what
+// the effect covers. Neither ever borrows a creature's hue.
+const quad = new THREE.PlaneGeometry(0.94, 0.94)
+const edgeGeo = new THREE.BoxGeometry(1, 0.035, 1)
+
+function makeOverlay(fill, line, fillOpacity, count) {
+  const fillMat = new THREE.MeshBasicMaterial({
+    color: fill, transparent: true, opacity: fillOpacity, depthWrite: false, fog: false,
+  })
+  const lineMat = new THREE.MeshBasicMaterial({ color: line, fog: false })
+  // the dim twin stamped on the terrain below, so a floating shape can be placed
+  const shadowMat = new THREE.MeshBasicMaterial({
+    color: line, transparent: true, opacity: 0.4, depthWrite: false, fog: false,
+  })
+  const fills = [], lines = [], shadows = []
+  for (let i = 0; i < count; i++) {
+    const f = new THREE.Mesh(quad, fillMat)
+    f.rotation.x = -Math.PI / 2
+    const l = new THREE.Mesh(edgeGeo, lineMat)
+    const s = new THREE.Mesh(edgeGeo, shadowMat)
+    f.visible = l.visible = s.visible = false
+    scene.add(f, l, s)
+    fills.push(f); lines.push(l); shadows.push(s)
+  }
+  return { fills, lines, shadows }
+}
+const reachOv = makeOverlay(0x63c4ff, 0xa8e6ff, 0.2, 180)
+const aoeOv = makeOverlay(0xc46bff, 0xe0b0ff, 0.3, 180)
+const ORTHO = [[1, 0], [-1, 0], [0, 1], [0, -1]]
+
+const dotGeo = new THREE.CylinderGeometry(0.13, 0.13, 0.02, 12)
+const dotMat = new THREE.MeshBasicMaterial({ color: 0xffd166, fog: false })
+const dotPool = []
+for (let i = 0; i <= MOVE + 1; i++) {
+  const m = new THREE.Mesh(dotGeo, dotMat)
+  m.visible = false
+  scene.add(m)
+  dotPool.push(m)
+}
+
+// One hue each, and no creature shares one with the UI: you are gold (so are your
+// path dots, your ghost and your tether), allies green, foes red, blue is reach,
+// violet is area.
+const YOU = 0xffc247
+const tokenGeo = new THREE.CapsuleGeometry(0.26, 0.42, 4, 12)
+const ghost = new THREE.Mesh(tokenGeo, new THREE.MeshLambertMaterial({
+  color: YOU, transparent: true, opacity: 0.45, depthWrite: false,
+}))
+ghost.visible = false
+scene.add(ghost)
+
+function makeTether(color, opacity) {
+  const line = new THREE.Mesh(
+    new THREE.BoxGeometry(0.05, 1, 0.05),
+    new THREE.MeshBasicMaterial({ color, transparent: true, opacity, fog: false }),
+  )
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(0.34, 0.03, 6, 20),
+    new THREE.MeshBasicMaterial({ color, transparent: true, opacity, fog: false }),
+  )
+  ring.rotation.x = -Math.PI / 2
+  line.visible = ring.visible = false
+  scene.add(line, ring)
+  return { line, ring }
+}
+const ghostTether = makeTether(0xffd98a, 0.45)
+
+const TOKEN_LIFT = 0.47
+
+// Every unit carries the same rig, and which one is yours is a colour rather
+// than a different set of objects. A wall is obviously solid; a capsule
+// standing on a square is not, so each gets a filled disc covering its cell.
+const TEAM = { ally: 0x46c47a, foe: 0xd8443c }
+const padGeo = new THREE.CircleGeometry(0.46, 24)
+const markGeo = new THREE.TorusGeometry(0.44, 0.045, 6, 22)
+const pipGeo = new THREE.TorusGeometry(0.54, 0.03, 6, 24)
+const bodyMeshes = []
+
+for (const u of UNITS) {
+  u.mesh = new THREE.Mesh(tokenGeo, new THREE.MeshLambertMaterial({ color: TEAM[u.team] }))
+  u.mesh.castShadow = true
+  u.mesh.userData = { body: u }
+
+  u.pad = new THREE.Mesh(padGeo, new THREE.MeshBasicMaterial({
+    color: TEAM[u.team], transparent: true, opacity: 0.7, depthWrite: false, fog: false,
+  }))
+  u.pad.rotation.x = -Math.PI / 2
+
+  // "you are caught in this" — a ring at the feet, and an outline shell around
+  // the body itself. The shell reads from any angle and at any altitude, where
+  // a ring on the floor can be hidden by the thing standing on it.
+  u.mark = new THREE.Mesh(markGeo, new THREE.MeshBasicMaterial({ color: 0xe0b0ff, fog: false }))
+  u.mark.rotation.x = -Math.PI / 2
+  u.shell = new THREE.Mesh(tokenGeo, new THREE.MeshBasicMaterial({
+    color: 0xe0b0ff, side: THREE.BackSide, transparent: true, opacity: 0.95,
+    depthWrite: false, fog: false,
+  }))
+  u.shell.scale.set(1.3, 1.18, 1.3)
+
+  // "this one is a legal target right now" — outside the caught-ring, so the
+  // two never sit on top of each other
+  u.pip = new THREE.Mesh(pipGeo, new THREE.MeshBasicMaterial({ color: 0xa8e6ff, fog: false }))
+  u.pip.rotation.x = -Math.PI / 2
+
+  // anything airborne drops a line and a ring onto the square below it —
+  // otherwise you can see it is up there but not which column it is over
+  u.tether = makeTether(TEAM[u.team], 0.75)
+
+  u.mark.visible = u.shell.visible = u.pip.visible = false
+  scene.add(u.mesh, u.pad, u.mark, u.shell, u.pip)
+  bodyMeshes.push(u.mesh)
+}
+
+function placeUnit(u) {
+  const p = world(u.x, u.z), y = yOf(u.a)
+  u.mesh.position.set(p.x, y + TOKEN_LIFT, p.z)
+  u.shell.position.copy(u.mesh.position)
+  u.pad.position.set(p.x, y + 0.016, p.z)
+  u.mark.position.set(p.x, y + 0.05, p.z)
+  u.pip.position.set(p.x, y + 0.045, p.z)
+  showTether(u.tether, u.x, u.z, u.a, true)
+}
+
+// The one you are controlling is gold — the same gold as its path, its ghost
+// and its tether. Command is a colour, not a different kind of token.
+function paintUnit(u) {
+  const active = u === S.at
+  const c = active ? YOU : TEAM[u.team]
+  u.mesh.material.color.setHex(c)
+  u.pad.material.color.setHex(c)
+  u.tether.line.material.color.setHex(active ? 0xffd98a : c)
+  u.tether.ring.material.color.setHex(active ? 0xffd98a : c)
+}
+
+// The shape itself, drawn as real geometry. Squares tell you the rules answer;
+// the solid tells you what you actually aimed. Everything inside this group is
+// measured in CELLS — the group squashes y, so one level of altitude is one unit
+// here exactly as it is in the maths, and the shape can never drift from the
+// cells it selects.
+const shapeSpace = new THREE.Group()
+shapeSpace.scale.set(1, LEVEL_H, 1)
+scene.add(shapeSpace)
+
+const GEO = {
+  sphere: new THREE.SphereGeometry(1, 28, 18),
+  cube: new THREE.BoxGeometry(1, 1, 1),
+  circle: new THREE.CylinderGeometry(1, 1, 0.04, 40),
+  // open-ended: a capped cone's base is a fan of triangles all meeting at its
+  // centre, and in wireframe that reads as a starburst rather than a cone
+  cone: new THREE.ConeGeometry(1, 1, 18, 1, true),
+}
+const solid = new THREE.Mesh(GEO.sphere, new THREE.MeshBasicMaterial({
+  color: 0xc46bff, transparent: true, opacity: 0.16, depthWrite: false,
+  side: THREE.DoubleSide, fog: false,
+}))
+const wire = new THREE.Mesh(GEO.sphere, new THREE.MeshBasicMaterial({
+  color: 0xe0b0ff, wireframe: true, transparent: true, opacity: 0.35, fog: false,
+}))
+solid.visible = wire.visible = false
+shapeSpace.add(solid, wire)
+
+const UP = new THREE.Vector3(0, 1, 0)
+const DOWN = new THREE.Vector3(0, -1, 0)
+
+function drawShape() {
+  const g = aimGeometry()
+  if (!g) { solid.visible = wire.visible = false; return }
+  const { O, dir } = g
+  const size = SHAPE_SIZE[S.shape]
+  const c = world(O.x, O.z)
+  // The maths puts a cell's centre on its integer altitude (|da| - 0.5 in every
+  // direction), but yOf(a) is the cell's FLOOR — the height a body stands on.
+  // Every solid has to be lifted half a level to sit where its own cell is,
+  // otherwise it hangs off the bottom of the square it originates in.
+  const oy = O.a + 0.5
+  solid.geometry = wire.geometry = GEO[S.shape]
+  solid.quaternion.identity()
+
+  if (S.shape === 'cone') {
+    // apex on you, base a full length away; the geometry's apex points +Y, so
+    // the axis to align is -Y. Base radius is half the length: 5e's cone is as
+    // wide at the end as it is long.
+    const v = new THREE.Vector3(dir[0], dir[2], dir[1])   // (x, altitude, z)
+    solid.position.set(c.x + dir[0] * size / 2, oy + dir[2] * size / 2, c.z + dir[1] * size / 2)
+    solid.quaternion.setFromUnitVectors(DOWN, v)
+    solid.scale.set(size / 2, size, size / 2)
+  } else if (S.shape === 'cube') {
+    const side = size * 2 + 1
+    solid.position.set(c.x, oy, c.z)
+    solid.scale.set(side, side, side)
+  } else if (S.shape === 'circle') {
+    // it lies on the ground, so it sits at the origin column's surface
+    solid.position.set(c.x, surf(O.x, O.z) + 0.03, c.z)
+    solid.scale.set(size, 1, size)
+  } else {
+    solid.position.set(c.x, oy, c.z)
+    solid.scale.setScalar(size)
+  }
+
+  wire.position.copy(solid.position)
+  wire.quaternion.copy(solid.quaternion)
+  wire.scale.copy(solid.scale)
+  solid.visible = wire.visible = true
+}
+
+// The sight line. Violet when it arrives, red where it stops — the single most
+// direct answer to "why can't I hit that."
+const MAX_SHOTS = 3
+const sightGeo = new THREE.CylinderGeometry(0.028, 0.028, 1, 6)
+const SIGHTS = []
+for (let i = 0; i < MAX_SHOTS; i++) {
+  const m = new THREE.Mesh(sightGeo, new THREE.MeshBasicMaterial({ color: 0xe0b0ff, fog: false }))
+  m.visible = false
+  scene.add(m)
+  SIGHTS.push(m)
+}
+
+// One line per dart, fanned apart — three darts on one creature have to read as
+// three, and drawn down the same axis they would be a single line.
+const Y_AXIS = new THREE.Vector3(0, 1, 0)
+function drawSights(list, from = S.at) {
+  for (const m of SIGHTS) m.visible = false
+  list.slice(0, MAX_SHOTS).forEach((t, i) => {
+    // The offset rays are how sight is PROVED, not how it is drawn. A shot
+    // cleared by one of the parallel shifts used to draw from that shifted
+    // start to that shifted end, sitting visibly off-centre in both squares.
+    // A clear line runs centre to centre; only a blocked one stops short.
+    const tr = bestSight(from, t)
+    const a = centre(new THREE.Vector3(), from.x, from.z, from.a)
+    const b = tr.clear ? centre(new THREE.Vector3(), t.x, t.z, t.a) : tr.at.clone()
+    if (list.length > 1) {
+      const d = b.clone().sub(a).normalize()
+      const off = new THREE.Vector3(-d.z, 0, d.x).multiplyScalar((i - (list.length - 1) / 2) * 0.17)
+      a.add(off)
+      b.add(off)
+    }
+    const len = a.distanceTo(b)
+    if (len < 0.05) return
+    const m = SIGHTS[i]
+    m.position.copy(a).lerp(b, 0.5)
+    m.scale.set(1, len, 1)
+    m.quaternion.setFromUnitVectors(Y_AXIS, b.clone().sub(a).normalize())
+    m.material.color.setHex(tr.clear ? 0xe0b0ff : 0xff5a4a)
+    m.visible = true
+  })
+}
+
+// -------------------------------------------------------------------- state
+const S = {
+  view: { x: 4.5, z: 4.5 },   // centre of the window onto a board bigger than it
+  who: 0,                 // which party member you are commanding
+  get at() { return PARTY[this.who] },
+  field: null,            // eligible set — where you can go, or what you can pick
+  template: new Set(),    // cells an area covers
+  // Aiming is a LIST, because some abilities are several single-target attacks:
+  // three darts that may stack on one creature or spread across three. Moving
+  // and areas simply never fill more than one slot, and `aim` is the last one
+  // picked, so everything single-aimed reads unchanged.
+  aims: [],
+  get aim() { return this.aims.length ? this.aims[this.aims.length - 1] : null },
+  shots: 1,               // how many single-target attacks this ability makes
+  listOpen: false,        // the target list, collapsed so it never hides the board
+  menuOpen: false,        // settings, folded away behind one glyph
+  showMini: true,         // the overview map — off is a legitimate way to play
+  side: 'right',          // where the view switch lives: 'right' | 'left' | 'none' (in the menu)
+  approach: null,         // a proposed move that would make an attack possible
+  followUp: null,         // and the target to aim at once you get there
+  anim: null,
+  act: 'move',            // 'move' | 'melee' | 'shoot' | 'aoe'
+  shape: 'sphere',
+  origin: 'point',        // 'self' | 'point'
+  mode: 'walk',           // 'walk' | 'fly'
+  layer: 0,
+  camMode: 'free',      // 'free' — drag to turn | 'fixed' — locked square-on
+}
+
+const cam = { az: Math.PI * 0.25, pol: 0.92, rad: 16 }
+const camGoal = { ...cam }
+
+const fmt = (v) => String(Math.round(v * 10) / 10)
+const needsAim = () => !(S.act === 'aoe' && S.origin === 'self' && S.shape !== 'cone')
+
+// Aim on the previewed layer whenever there is one: flying always, and while
+// targeting whenever the aim has been raised off the floor. Everything that
+// depends on this reads the one predicate — the ray, the altitude the tap
+// resolves to, and where the blue region is drawn. Two of them once disagreed.
+const onPlane = () => S.mode === 'fly' || (S.act !== 'move' && S.layer > 0)
+
+// Where a screen position meets the ground, in grid coordinates. Zooming aims
+// at this: the thing under your fingers is what you are zooming towards.
+function groundUnder(clientX, clientY) {
+  const r = renderer.domElement.getBoundingClientRect()
+  ndc.set(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1)
+  ray.setFromCamera(ndc, camera)
+  const o = ray.ray.origin, d = ray.ray.direction
+  if (d.y > -1e-4) return null              // pointing at or above the horizon
+  const tt = -o.y / d.y
+  return { x: o.x + d.x * tt + (N - 1) / 2, z: o.z + d.z * tt + (N - 1) / 2 }
+}
+
+// Zoom toward a point: as the camera closes in, the view slides the same
+// fraction of the way to whatever you aimed at, so that point stays put and
+// ends up centred. Pulling back does the inverse and widens away from it.
+function zoomTo(rad, anchor, fromRad, fromView) {
+  const next = THREE.MathUtils.clamp(rad, 8, 48)
+  camGoal.rad = next
+  userZoomed = true
+  if (!anchor) return
+  const k = THREE.MathUtils.clamp(1 - next / fromRad, -1, 1)
+  setView(fromView.x + (anchor.x - fromView.x) * k, fromView.z + (anchor.z - fromView.z) * k)
+}
+
+function placeAt(obj, x, z, a) {
+  const p = world(x, z)
+  obj.position.set(p.x, yOf(a) + TOKEN_LIFT, p.z)
+}
+
+const RANK = { now: 0, move: 1, no: 2 }
+
+// The list is rebuilt from scratch each refresh — six rows is nothing, and it
+// can never disagree with the board that way.
+function buildTargets() {
+  if (!S.listOpen) return
+
+  const moveField = reachFrom(S.at.x, S.at.z, S.at.a, S.mode === 'fly')
+  const rows = UNITS.filter((u) => u !== S.at).map((u) => {
+    if (canTarget(u.x, u.z, u.a)) return { u, kind: 'now', why: `${Math.round(dist3(S.at, u))} sq` }
+    const ap = approach(u, moveField)
+    if (ap) return { u, kind: 'move', why: `move ${fmt(ap.cost)}`, ap, field: moveField }
+    const far = dist3(S.at, u) > (S.act === 'melee' ? MELEE_REACH : RANGE) + 1e-6
+    return { u, kind: 'no', why: far ? 'out of range' : 'no sight' }
+  }).sort((a, b) => RANK[a.kind] - RANK[b.kind] || dist3(S.at, a.u) - dist3(S.at, b.u))
+
+  const now = rows.filter((r) => r.kind === 'now').length
+  listCount.textContent = `${now} in reach of ${rows.length}`
+
+  targetRows.replaceChildren(...rows.map((r) => {
+    const b = document.createElement('button')
+    b.className = 'trow'
+    const picked = S.approach ? S.approach.target === r.u
+      : S.aims.some((c) => bodyAt(c.x, c.z, c.a) === r.u)
+    b.setAttribute('aria-pressed', String(picked))
+    const dot = r.u.team === 'foe' ? '#d8443c' : '#46c47a'
+    b.innerHTML = `<span class="dot" style="background:${dot}"></span>` +
+      `<b>${r.u.team === 'foe' ? 'foe' : 'ally'}</b>` +
+      `<span class="why ${r.kind}">${r.why}</span>`
+    b.onclick = () => targetUnit(r.u)
+    return b
+  }))
+}
+
+// A full list swaps its last entry rather than refusing — at x1 that is simply
+// switching targets, which is plainly what picking a new creature means.
+function pushAim(cell) {
+  if (!multi()) S.aims = [cell]
+  else if (S.aims.length < S.shots) S.aims.push(cell)
+  else S.aims[S.aims.length - 1] = cell
+}
+
+// Choosing a creature means the same thing wherever you did it: attack it if you
+// can, otherwise propose the move that would let you, otherwise say why not. The
+// list and the board both come through here so they can never disagree.
+function targetUnit(p) {
+  S.approach = null
+  armed = false
+  S.listOpen = false          // choosing hands the board back
+  const spot = { x: p.x, z: p.z, a: p.a }
+
+  if (canTarget(spot.x, spot.z, spot.a)) {
+    pushAim(spot)
+    refresh()
+    return
+  }
+  // a single-target attack still needs someone standing there, however far you walk
+  if (multi() && !bodyAt(spot.x, spot.z, spot.a)) {
+    say(refuseTarget(spot.x, spot.z, spot.a))
+    refresh()
+    return
+  }
+  const field = reachFrom(S.at.x, S.at.z, S.at.a, S.mode === 'fly')
+  const ap = approach(spot, field)
+  if (ap) {
+    S.aims = []
+    S.approach = { cell: ap.cell, cost: ap.cost, target: spot, field }
+  } else {
+    say(refuseTarget(spot.x, spot.z, spot.a))
+  }
+  refresh()
+}
+
+// breadcrumbs — used by a committed move and by a merely proposed approach
+function drawPath(path) {
+  path.forEach(([px, pz, pa], i) => {
+    const d = dotPool[i]
+    if (!d) return
+    const p = world(px, pz)
+    d.position.set(p.x, yOf(pa) + 0.03, p.z)
+    d.visible = i > 0
+  })
+}
+
+function showTether(t, x, z, a, on) {
+  const s = surf(x, z)
+  if (!on || a <= s + 1e-6) { t.line.visible = t.ring.visible = false; return }
+  const p = world(x, z), y0 = yOf(s), y1 = yOf(a)
+  t.line.position.set(p.x, (y0 + y1) / 2, p.z)
+  t.line.scale.y = y1 - y0
+  t.ring.position.set(p.x, y0 + 0.04, p.z)
+  t.line.visible = t.ring.visible = true
+}
+
+function recompute() {
+  if (S.mode === 'fly' && !LANDABLE.has(S.at.a)) S.at.a = Math.ceil(S.at.a)
+  keepInView(S.at)
+  S.field = computeField()
+  S.layer = S.at.a
+  S.aims = []
+  armed = false
+  if (S.followUp) {
+    const f = S.followUp
+    S.followUp = null
+    if (canTarget(f.x, f.z, f.a)) S.aims = [{ x: f.x, z: f.z, a: f.a }]
+  }
+  refresh()
+}
+
+// Everything the overlays show is derived here, so aiming, changing shape,
+// stepping altitude and switching action all go through one path.
+function refresh() {
+  S.template = S.act === 'aoe' ? templateCells() : new Set()
+  // targeting modes show bodies as pickable; moving hides them (never a destination)
+  drawOverlay(reachOv, needsAim() ? [...S.field.cost.keys()] : [], S.act === 'move', false)
+
+  // With the solid drawn, squares no longer have to carry the shape — so they
+  // fall back to what they are good at: the grid answer on the floor, plus the
+  // layer you happen to be looking at. Stacked mid-air layers were the noise.
+  const footprint = [...S.template].filter((k) => {
+    const [x, z, a] = k.split(',').map(Number)
+    return a === surf(x, z) || (onPlane() && a === S.layer)
+  })
+  drawOverlay(aoeOv, footprint, false, true)
+  drawShape()
+
+  const hit = struck()
+  const single = S.act === 'melee' || S.act === 'shoot'
+  for (const u of UNITS) {
+    if (!S.anim || u !== S.at) placeUnit(u)   // the mover is driven by the loop
+    paintUnit(u)
+    u.mark.visible = u.shell.visible = hit.includes(u)
+    u.pip.visible = single && u !== S.at && !hit.includes(u) && canTarget(u.x, u.z, u.a)
+  }
+
+  ghost.visible = false
+  showTether(ghostTether, 0, 0, 0, false)
+  for (const d of dotPool) d.visible = false
+  // A proposed approach draws like a move — path and ghost — plus the shot it
+  // would open up, fired from where you would be standing rather than here.
+  if (S.approach) {
+    const { cell, target, field, cost } = S.approach
+    drawPath(pathTo(field, cell.x, cell.z, cell.a))
+    placeAt(ghost, cell.x, cell.z, cell.a)
+    ghost.visible = true
+    showTether(ghostTether, cell.x, cell.z, cell.a, true)
+    drawSights([target], cell)
+    const verb = S.act === 'aoe' ? S.shape : S.act === 'melee' ? 'strike' : 'shoot'
+    const caught = S.act === 'aoe' ? ` · ${tally(hit)}` : ''
+    readout.textContent = `move ${fmt(cost)} of ${MOVE}, then ${verb}${caught}`
+    goBtn.hidden = false
+    goBtn.textContent = `move & ${verb}`
+    goBtn.classList.remove('warn')
+    chrome(true)
+    buildTargets()
+    PARTY.forEach((u, i) => u.chip.setAttribute('aria-pressed', String(i === S.who)))
+    altBox.hidden = !(S.mode === 'fly' || S.act !== 'move')
+    return
+  }
+
+  drawSights(S.act === 'move' ? [] : S.aims)
+
+  if (S.act === 'move') {
+    if (S.aim) {
+      drawPath(pathTo(S.field, S.aim.x, S.aim.z, S.aim.a))
+      placeAt(ghost, S.aim.x, S.aim.z, S.aim.a)
+      ghost.visible = true
+      showTether(ghostTether, S.aim.x, S.aim.z, S.aim.a, true)
+      readout.textContent = `${fmt(S.field.cost.get(k3(S.aim.x, S.aim.z, S.aim.a)))} of ${MOVE}`
+    } else {
+      readout.textContent = S.mode === 'fly' ? `move ${MOVE} · you at ${S.at.a}` : `move ${MOVE}`
+    }
+  } else {
+    const label = S.act === 'aoe' ? `${S.shape} from ${S.origin}` : S.act === 'melee' ? 'melee' : 'ranged'
+    // the dart count belongs to single-target attacks only — an area has one origin
+    const count = multi() && S.shots > 1 ? ` ${S.aims.length}/${S.shots}` : ''
+    if (S.aim) {
+      const far = S.act === 'shoot' ? `${Math.round(dist3(S.at, S.aim))} sq · ` : ''
+      readout.textContent = `${label}${count} · ${far}${tally(hit)}`
+    } else if (!needsAim()) {
+      readout.textContent = `${S.shape} from self · ${tally(hit)}`
+    } else if (S.act === 'aoe') {
+      readout.textContent = `${S.shape} — pick a square`
+    } else {
+      readout.textContent = `${label}${count} — pick a target`
+    }
+  }
+
+  // the commit only exists once there is something to commit to
+  const ready = S.act === 'aoe' ? (S.aim || !needsAim()) && S.template.size > 0 : !!S.aim
+  goBtn.hidden = !ready
+  chrome(ready)
+  const darts = multi() && S.aims.length > 1 ? ` ×${S.aims.length}` : ''
+  // an attack that would catch one of your own says so on the button itself
+  goBtn.textContent = armed ? `hit ${tally(friendlies())}?` : `${GO_LABEL[S.act]}${darts}`
+  goBtn.classList.toggle('warn', armed)
+
+  buildTargets()
+  drawMini()
+  PARTY.forEach((u, i) => u.chip.setAttribute('aria-pressed', String(i === S.who)))
+
+  altCap.textContent = S.act === 'move' ? 'alt' : 'aim'
+  altNum.firstChild.nodeValue = String(S.layer)
+  altUp.disabled = S.layer >= MAX_ALT
+  altDown.disabled = S.layer <= 0
+}
+
+// Nothing is on screen unless it can be used right now. Options belong to their
+// action, the walk/fly switch only matters while moving, and the target list and
+// the commit share one slot — they are never both wanted at once.
+function chrome(ready) {
+  // Opening the list stands IN PLACE of the controls rather than above them, so
+  // the board is never covered by the thing describing it.
+  targetsPanel.hidden = !S.listOpen
+  partyRowEl.hidden = actRow.hidden = shotRow.hidden = shapeRow.hidden = modRow.hidden = S.listOpen
+  if (S.listOpen) {
+    menu.hidden = !S.menuOpen
+  mini.hidden = !S.showMini
+  placeViewSwitch()
+    return
+  }
+
+  shotRow.hidden = !multi()
+  shapeRow.hidden = S.act !== 'aoe'
+  modeBtn.hidden = S.act !== 'move'
+  originBtn.hidden = S.act !== 'aoe'
+  targetsBtn.hidden = S.act === 'move'
+  goBtn.hidden = !ready
+  modRow.hidden = modeBtn.hidden && originBtn.hidden && targetsBtn.hidden && goBtn.hidden
+  altBox.hidden = !(S.mode === 'fly' || S.act !== 'move')
+  menu.hidden = !S.menuOpen
+  mini.hidden = !S.showMini
+  placeViewSwitch()
+}
+
+// Draw one slice: walking, every cell sits at its own surface; flying, only the
+// altitude being previewed. A volume cannot be read, so only ever show a layer.
+// Reach is up to 400 cells, so it can only ever be shown one layer at a time.
+// An area is twenty — small enough to draw as an actual stack of layers, which
+// is the only way a sphere ever looks like a ball instead of a circle.
+function drawOverlay(ov, keys, skipBodies, allLayers) {
+  const shown = []
+  const cols = new Set()      // "x,z"   — contiguity when one layer is drawn
+  const cells = new Set()     // "x,z,a" — contiguity when the whole volume is
+  const floor = new Map()     // lowest drawn layer per column, for the ground twin
+
+  for (const k of keys) {
+    const [x, z, a] = k.split(',').map(Number)
+    // the eligible region rises with the aim, exactly as it does when flying —
+    // a floating plane is what makes the aiming height visible at all
+    if (!allLayers && (onPlane() ? a !== S.layer : a !== surf(x, z))) continue
+    if (skipBodies && bodyAt(x, z, a)) continue
+    const col = `${x},${z}`
+    if (!allLayers && cols.has(col)) continue
+    shown.push([x, z, a])
+    cols.add(col)
+    cells.add(k)
+    if (!floor.has(col) || a < floor.get(col)) floor.set(col, a)
+  }
+
+  // one layer: neighbouring columns join even at different terrain heights.
+  // whole volume: only cells on the same layer join, so each layer gets a rim.
+  const joined = allLayers
+    ? (x, z, a) => cells.has(k3(x, z, a))
+    : (x, z) => cols.has(`${x},${z}`)
+
+  const lift = ov === aoeOv ? 0.03 : 0.012
+  let fi = 0, li = 0                    // fills count cells, lines count edges
+  for (const [x, z, a] of shown) {
+    const p = world(x, z), y = yOf(a)
+
+    if (fi < ov.fills.length) {
+      const f = ov.fills[fi++]
+      f.position.set(p.x, y + lift, p.z)
+      f.visible = true
+    }
+    for (const [dx, dz] of ORTHO) {
+      if (joined(x + dx, z + dz, a) || li >= ov.lines.length) continue
+      const l = ov.lines[li], s = ov.shadows[li]
+      li++
+      l.position.set(p.x + dx * 0.5, y + lift + 0.008, p.z + dz * 0.5)
+      l.scale.set(dx !== 0 ? 0.075 : 1, 1, dz !== 0 ? 0.075 : 1)
+      l.visible = true
+
+      const yg = yOf(surf(x, z))
+      if (y - yg > 0.05 && a === floor.get(`${x},${z}`)) {
+        s.position.set(p.x + dx * 0.5, yg + 0.02, p.z + dz * 0.5)
+        s.scale.copy(l.scale)
+        s.visible = true
+      } else s.visible = false
+    }
+  }
+  for (let j = fi; j < ov.fills.length; j++) ov.fills[j].visible = false
+  for (let j = li; j < ov.lines.length; j++) ov.lines[j].visible = ov.shadows[j].visible = false
+}
+
+let toastTimer = null
+function say(msg) {
+  toast.textContent = msg
+  toast.classList.add('on')
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => toast.classList.remove('on'), 1600)
+}
+
+// -------------------------------------------------------------------- input
+const ray = new THREE.Raycaster()
+const ndc = new THREE.Vector2()
+const pointers = new Map()
+let movedAny = false
+let pinchStart = null
+
+const pickPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)
+const hitPoint = new THREE.Vector3()
+
+
+function pick(clientX, clientY) {
+  const r = renderer.domElement.getBoundingClientRect()
+  ndc.set(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1)
+  ray.setFromCamera(ndc, camera)
+
+  // A body is a much bigger tap target than the square under it, and it is the
+  // thing you are actually looking at — so tap the model. This also means a
+  // flyer can be hit without first raising the aim to its altitude.
+  const onBody = ray.intersectObjects(bodyMeshes, false)[0]
+  if (onBody) {
+    const b = onBody.object.userData.body
+    return { x: b.x, z: b.z, a: b.a }
+  }
+
+  if (onPlane()) {
+    pickPlane.constant = -yOf(S.layer)
+    if (!ray.ray.intersectPlane(pickPlane, hitPoint)) return null
+    const x = Math.round(hitPoint.x + (N - 1) / 2)
+    const z = Math.round(hitPoint.z + (N - 1) / 2)
+    return x >= 0 && z >= 0 && x < N && z < N ? { x, z } : null
+  }
+
+  const hit = ray.intersectObjects(tileMeshes, false)[0]
+  return hit ? hit.object.userData : null
+}
+
+function commit(x, z, a, field = S.field) {
+  S.anim = { path: pathTo(field, x, z, a), i: 0, t: 0 }
+  S.aims = []
+  ghost.visible = false
+  showTether(ghostTether, 0, 0, 0, false)
+  readout.textContent = 'moving…'
+}
+
+function onTap(clientX, clientY) {
+  if (S.anim) return
+  armed = false
+  S.approach = null
+  const t = pick(clientX, clientY)
+  if (!t) return
+  // a tapped body brings its own altitude; a tapped square takes it from context
+  const a = t.a !== undefined ? t.a : onPlane() ? S.layer : surf(t.x, t.z)
+
+  // Tapping yourself always means "forget it", in every mode.
+  if (t.x === S.at.x && t.z === S.at.z && a === S.at.a) { S.aims = []; refresh(); return }
+
+  // A tap only ever aims. Committing is the button — hunting the same small
+  // square a second time is a bad thing to ask of a thumb.
+  if (S.act === 'move') {
+    // Tapping one of your own takes command of them. It was previously a dead
+    // tap that only ever said "you can pass, not stop", and a body is the most
+    // obvious thing on the board to point at when you mean "you, now".
+    const b = bodyAt(t.x, t.z, a)
+    if (b && b.team === 'ally') { takeControl(PARTY.indexOf(b)); return }
+    if (!S.field.cost.has(k3(t.x, t.z, a))) {
+      say(refuseMove(t.x, t.z, a))
+      S.aims = []; refresh(); return
+    }
+    S.aims = [{ x: t.x, z: t.z, a }]
+    refresh()
+    return
+  }
+
+  // Tapping a creature goes through the same door the list uses, so an
+  // unreachable one proposes the move instead of merely refusing.
+  // Creature or bare square, it goes through the same door — an area you cannot
+  // reach from here proposes the move that would place it, exactly as a foe does.
+  targetUnit({ x: t.x, z: t.z, a })
+}
+
+const GO_LABEL = { move: 'go', melee: 'strike', shoot: 'shoot', aoe: 'cast' }
+
+function resolve() {
+  // A proposed approach is a move first; the target is remembered and aimed at
+  // the moment you arrive, so the list's promise is actually kept.
+  if (S.approach) {
+    const { cell, target, field } = S.approach
+    S.followUp = target
+    S.approach = null
+    commit(cell.x, cell.z, cell.a, field)
+    return
+  }
+
+  // Anything that catches one of your own asks once. The button arms rather
+  // than opening a dialog: a modal is the wrong shape on a phone, and a
+  // blocking alert() would wedge the page outright.
+  if (armed !== true && friendlies().length) {
+    armed = true
+    refresh()
+    say(`that catches ${tally(friendlies())} — press again`)
+    return
+  }
+  armed = false
+  if (S.act === 'move') {
+    if (S.aim) commit(S.aim.x, S.aim.z, S.aim.a)
+    return
+  }
+  // Say what happened, then clear the targets — an attack that has gone off is
+  // spent, and leaving its darts on the board makes the next one look assigned.
+  const hit = struck()
+  const msg = `${GO_LABEL[S.act]}${hit.length > 1 ? ` ×${hit.length}` : ''} — ${tally(hit)}`
+  S.aims = []
+  refresh()
+  say(msg)
+}
+
+let armed = false
+const friendlies = () => [...new Set(struck())].filter((b) => b.team === 'ally')
+
+function refuseMove(x, z, a) {
+  const b = bodyAt(x, z, a)
+  if (b) return b.team === 'ally' ? 'you can pass, not stop' : 'someone is standing there'
+  if (S.mode === 'fly') {
+    if (isWall(x, z) && a <= 2) return 'wall — climb over it'
+    if (!freeAt(x, z, a)) return 'that is inside the ground'
+    return 'out of range'
+  }
+  if (isWall(x, z)) return 'wall'
+  for (const [dx, dz] of NEIGHBORS) {
+    const nx = x + dx, nz = z + dz
+    if (!S.field.cost.has(k3(nx, nz, surf(nx, nz)))) continue
+    if (surf(x, z) - surf(nx, nz) > 0.5 + 1e-6) return 'cliff — take the ramp'
+  }
+  return 'out of range'
+}
+
+const el = renderer.domElement
+
+el.addEventListener('pointerdown', (e) => {
+  try { el.setPointerCapture(e.pointerId) } catch { /* synthetic / already gone */ }
+  if (pointers.size === 0) movedAny = false
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY })
+  if (pointers.size === 2) {
+    const [a, b] = [...pointers.values()]
+    pinchStart = {
+      d: Math.hypot(a.x - b.x, a.y - b.y),
+      rad: camGoal.rad,
+      view: { ...S.view },
+      anchor: groundUnder((a.x + b.x) / 2, (a.y + b.y) / 2),
+    }
+  }
+})
+
+el.addEventListener('pointermove', (e) => {
+  const p = pointers.get(e.pointerId)
+  if (!p) return
+  const dx = e.clientX - p.x, dy = e.clientY - p.y
+  p.x = e.clientX; p.y = e.clientY
+  if (Math.hypot(e.clientX - p.sx, e.clientY - p.sy) > 10) movedAny = true
+
+  if (pointers.size === 2 && pinchStart) {
+    const [a, b] = [...pointers.values()]
+    const d = Math.hypot(a.x - b.x, a.y - b.y)
+    zoomTo(pinchStart.rad * (pinchStart.d / Math.max(d, 1)), pinchStart.anchor, pinchStart.rad, pinchStart.view)
+  } else if (pointers.size === 1 && S.camMode === 'free') {
+    camGoal.az -= dx * 0.006
+    camGoal.pol = THREE.MathUtils.clamp(camGoal.pol - dy * 0.005, 0.22, 1.32)
+    userRotated = true
+  } else if (pointers.size === 1) {
+    // fixed: the angle is locked, so the drag is worth spending on getting
+    // about — hold the ground under the finger and pull the board along
+    const was = groundUnder(e.clientX - dx, e.clientY - dy)
+    const now = groundUnder(e.clientX, e.clientY)
+    if (was && now) setView(S.view.x - (now.x - was.x), S.view.z - (now.z - was.z))
+  }
+})
+
+function release(e) {
+  if (!pointers.has(e.pointerId)) return
+  const last = pointers.size === 1
+  pointers.delete(e.pointerId)
+  if (pointers.size < 2) pinchStart = null
+  if (last && !movedAny) onTap(e.clientX, e.clientY)
+}
+el.addEventListener('pointerup', release)
+el.addEventListener('pointercancel', release)
+
+el.addEventListener('wheel', (e) => {
+  e.preventDefault()
+  const from = camGoal.rad
+  zoomTo(from + e.deltaY * 0.012, groundUnder(e.clientX, e.clientY), from, { ...S.view })
+}, { passive: false })
+
+// ---------------------------------------------------------------------- HUD
+const readout = document.getElementById('readout')
+const toast = document.getElementById('toast')
+const camBtn = document.getElementById('camBtn')
+const sideBox = document.getElementById('sideBox')
+const altBox = document.getElementById('altBox')
+const altNum = document.getElementById('altNum')
+const altCap = altNum.querySelector('small')
+const altUp = document.getElementById('altUp')
+const altDown = document.getElementById('altDown')
+const modeBtn = document.getElementById('modeBtn')
+const goBtn = document.getElementById('goBtn')
+const mini = document.getElementById('mini')
+const miniCtx = mini.getContext('2d')
+const MINI_TILE = mini.width / N
+// the overview borrows the board's palette, dimmed so tokens stay the bright thing
+const miniColor = (c) => '#' + new THREE.Color(PALETTES[SKIN][c]).multiplyScalar(0.62).getHexString()
+
+// terrain only changes when regenerated, so it is painted once per board and
+// blitted thereafter
+const miniBase = document.createElement('canvas')
+miniBase.width = miniBase.height = mini.width
+function paintMiniBase() {
+  const g = miniBase.getContext('2d')
+  for (let z = 0; z < N; z++) {
+    for (let x = 0; x < N; x++) {
+      g.fillStyle = miniColor(cell(x, z))
+      g.fillRect(x * MINI_TILE, z * MINI_TILE, MINI_TILE, MINI_TILE)
+    }
+  }
+}
+paintMiniBase()
+
+// Once zooming carries you to the point you pinched, the overview stops needing
+// to say where the camera is — you took it there. So it is an overview again:
+// terrain, and who is standing on it.
+function drawMini() {
+  if (!S.showMini) return
+  miniCtx.clearRect(0, 0, mini.width, mini.height)
+  miniCtx.drawImage(miniBase, 0, 0)
+
+  for (const u of UNITS) {
+    miniCtx.fillStyle = u === S.at ? '#ffc247' : u.team === 'foe' ? '#d8443c' : '#46c47a'
+    miniCtx.beginPath()
+    miniCtx.arc((u.x + 0.5) * MINI_TILE, (u.z + 0.5) * MINI_TILE, MINI_TILE * 0.42, 0, Math.PI * 2)
+    miniCtx.fill()
+  }
+}
+
+// drag the window around the overview
+function miniTo(e) {
+  const r = mini.getBoundingClientRect()
+  setView((e.clientX - r.left) / r.width * N - 0.5, (e.clientY - r.top) / r.height * N - 0.5)
+}
+mini.addEventListener('pointerdown', (e) => {
+  try { mini.setPointerCapture(e.pointerId) } catch { /* synthetic */ }
+  miniTo(e)
+})
+mini.addEventListener('pointermove', (e) => { if (e.buttons || e.pressure > 0) miniTo(e) })
+
+const targetsPanel = document.getElementById('targets')
+const targetRows = document.getElementById('targetRows')
+const listCount = document.getElementById('listCount')
+document.getElementById('targetsBtn').onclick = () => { S.listOpen = true; refresh() }
+document.getElementById('listClose').onclick = () => { S.listOpen = false; refresh() }
+const actRow = document.getElementById('actRow')
+const partyRowEl = document.getElementById('partyRow')
+const modRow = document.getElementById('modRow')
+const targetsBtn = document.getElementById('targetsBtn')
+const menu = document.getElementById('menu')
+const shotRow = document.getElementById('shotRow')
+const shapeRow = document.getElementById('shapeRow')
+const originBtn = document.getElementById('originBtn')
+
+// One chip per party member. Free selection for now — a real game would hand
+// command out by initiative, but whose turn it is is a different question from
+// whether commanding someone else works at all.
+const partyRow = document.getElementById('partyRow')
+PARTY.forEach((u, i) => {
+  const b = document.createElement('button')
+  b.className = 'chip'
+  b.textContent = String(i + 1)
+  b.setAttribute('aria-pressed', String(i === 0))
+  b.onclick = () => takeControl(i)
+  partyRow.appendChild(b)
+  u.chip = b
+})
+
+function takeControl(i) {
+  if (i < 0 || i === S.who || S.anim) return
+  S.who = i
+  recompute()
+  say(`commanding ${i + 1}`)
+}
+
+document.getElementById('menuBtn').onclick = () => { S.menuOpen = !S.menuOpen; refresh() }
+
+// The switch is ONE element that moves house, rather than two that could
+// disagree — the failure this toy produced six times in a session.
+function placeViewSwitch() {
+  const inMenu = S.side === 'none'
+  const host = inMenu ? menu : sideBox
+  if (camBtn.parentElement !== host) host.prepend(camBtn)
+  sideBox.hidden = inMenu
+  sideBox.classList.toggle('left', S.side === 'left')
+  camBtn.classList.toggle('tab', !inMenu)
+  camBtn.innerHTML = inMenu
+    ? `<span class="k">view</span>&nbsp;${S.camMode}`
+    : (S.camMode === 'free' ? '&#8635;' : '&#9638;')
+}
+
+document.getElementById('sideBtn').onclick = (e) => {
+  S.side = S.side === 'right' ? 'left' : S.side === 'left' ? 'none' : 'right'
+  e.currentTarget.innerHTML = `<span class="k">controls</span>&nbsp;${S.side}`
+  refresh()
+  if (S.side === 'none') say('the view switch is in this menu now')
+}
+
+document.getElementById('miniBtn').onclick = (e) => {
+  S.showMini = !S.showMini
+  e.currentTarget.innerHTML = `<span class="k">overview</span>&nbsp;${S.showMini ? 'on' : 'off'}`
+  refresh()
+}
+
+// free: drag turns the camera. fixed: it holds whatever angle free left it at,
+// and the drag is spent on getting about instead. Fixed means "hold this", not
+// "return to a canonical view" — you turned to see something for a reason.
+camBtn.onclick = () => {
+  S.camMode = S.camMode === 'free' ? 'fixed' : 'free'
+  refresh()
+  say(S.camMode === 'fixed' ? 'fixed — angle held, drag to pan' : 'free — drag to turn')
+}
+
+
+// The altitude stepper is both the input and the slice control — you aim at a
+// layer, and that same layer is the only one drawn.
+const setLayer = (d) => () => {
+  S.layer = THREE.MathUtils.clamp(S.layer + d, 0, MAX_ALT)
+  S.aims = []
+  armed = false
+  refresh()
+}
+altUp.onclick = setLayer(1)
+altDown.onclick = setLayer(-1)
+
+modeBtn.onclick = () => {
+  S.mode = S.mode === 'walk' ? 'fly' : 'walk'
+  modeBtn.innerHTML = `<span class="k">move</span>&nbsp;${S.mode}`
+  if (S.mode === 'walk') S.at.a = surf(S.at.x, S.at.z)
+  recompute()
+  say(S.mode === 'fly' ? 'flying — climbing costs movement' : 'walking — the cliff is back')
+}
+
+for (const b of document.querySelectorAll('[data-act]')) {
+  b.onclick = () => {
+    S.act = b.dataset.act
+    for (const o of document.querySelectorAll('[data-act]')) o.setAttribute('aria-pressed', String(o === b))
+    shapeRow.hidden = S.act !== 'aoe'
+    S.aims = []
+    armed = false
+    S.approach = null
+    S.field = computeField()
+    refresh()
+  }
+}
+
+for (const b of document.querySelectorAll('[data-shots]')) {
+  b.onclick = () => {
+    S.shots = Number(b.dataset.shots)
+    for (const o of document.querySelectorAll('[data-shots]')) o.setAttribute('aria-pressed', String(o === b))
+    S.aims = []
+    armed = false
+    refresh()
+  }
+}
+
+for (const b of document.querySelectorAll('[data-shape]')) {
+  b.onclick = () => {
+    S.shape = b.dataset.shape
+    for (const o of document.querySelectorAll('[data-shape]')) o.setAttribute('aria-pressed', String(o === b))
+    refresh()
+  }
+}
+
+originBtn.onclick = () => {
+  S.origin = S.origin === 'point' ? 'self' : 'point'
+  originBtn.innerHTML = `<span class="k">from</span>&nbsp;${S.origin}`
+  refresh()
+  if (S.origin === 'self' && S.shape === 'cone') say('a cone from you still needs a direction')
+}
+
+goBtn.onclick = resolve
+
+document.getElementById('resetBtn').onclick = () => {
+  UNITS.forEach((u, i) => Object.assign(u, HOME[i]))
+  S.who = 0
+  S.anim = null
+  userZoomed = userRotated = false
+  resize()
+  setView(S.at.x, S.at.z)   // a clean slate includes where you were looking
+  recompute()
+}
+
+// -------------------------------------------------------- terrain generator
+// Four recipes, two knobs. Every recipe writes the same four characters the
+// authored board uses, and every board then passes the same two repairs:
+// each ledge blob gets a ramp (the only way up), and every walkable pocket is
+// trenched through to the biggest one — so no recipe can strand a creature.
+const R = (n) => Math.floor(Math.random() * n)
+const pickR = (arr) => arr[R(arr.length)]
+const gridOf = (ch) => Array.from({ length: N }, () => Array(N).fill(ch))
+const at = (g, x, z) => (x < 0 || z < 0 || x >= N || z >= N ? null : g[z][x])
+const grounded = (c) => c === '.' || c === '+' || c === '2'
+
+// A soft height field under every recipe: a coarse random lattice smoothed
+// across the board, then cut into three levels by rank — the bottom of the
+// field sinks to valleys, the top rises to hills, and the middle is the
+// ground you walk between them. Both dials at zero means flat low ground.
+function heightField(hills, vales) {
+  if (hills < 0.02 && vales < 0.02) return () => 0
+  const L = 5
+  const lat = Array.from({ length: L }, () => Array.from({ length: L }, Math.random))
+  const s = (t) => t * t * (3 - 2 * t)
+  const h = Array.from({ length: N }, (_, z) => Array.from({ length: N }, (_, x) => {
+    const u = (x / (N - 1)) * (L - 1), v = (z / (N - 1)) * (L - 1)
+    const x0 = Math.min(L - 2, Math.floor(u)), z0 = Math.min(L - 2, Math.floor(v))
+    const fx = s(u - x0), fz = s(v - z0)
+    const a = lat[z0][x0] * (1 - fx) + lat[z0][x0 + 1] * fx
+    const b = lat[z0 + 1][x0] * (1 - fx) + lat[z0 + 1][x0 + 1] * fx
+    return a * (1 - fz) + b * fz
+  }))
+  const rank = h.flat().sort((p, q) => p - q)
+  const lo = vales < 0.02 ? -1 : rank[Math.floor(vales * 0.45 * (rank.length - 1))]
+  const hi = hills < 0.02 ? 2 : rank[Math.floor((1 - hills * 0.4) * (rank.length - 1))]
+  return (x, z) => (h[z][x] <= lo ? 0 : h[z][x] >= hi ? 2 : 1)
+}
+
+function carveRect(g, x0, z0, w, h, ch) {
+  for (let z = z0; z < z0 + h; z++) for (let x = x0; x < x0 + w; x++) g[z][x] = ch
+}
+
+// mutually-walkable pockets: orthogonal neighbours whose surfaces are within a
+// half step of each other — the same rule feet live by, minus the drop-only cliff
+function walkComps(g) {
+  const seen = Array.from({ length: N }, () => Array(N).fill(false))
+  const comps = []
+  for (let z0 = 0; z0 < N; z0++) for (let x0 = 0; x0 < N; x0++) {
+    if (g[z0][x0] === '#' || seen[z0][x0]) continue
+    const cells = [], q = [[x0, z0]]
+    seen[z0][x0] = true
+    while (q.length) {
+      const [x, z] = q.pop()
+      cells.push([x, z])
+      for (const [dx, dz] of ORTHO) {
+        const nx = x + dx, nz = z + dz, c = at(g, nx, nz)
+        if (c === null || c === '#' || seen[nz][nx]) continue
+        if (Math.abs(SURF[c] - SURF[g[z][x]]) > 0.5 + 1e-6) continue
+        seen[nz][nx] = true
+        q.push([nx, nz])
+      }
+    }
+    comps.push(cells)
+  }
+  return comps
+}
+
+// Every raised region needs one way up from the level below it: a '/' on low
+// ground beside a mid region, a '^' on mid ground beside a high region. A high
+// region with no mid ground touching it stays a crag — drop-off only.
+function attachRamps(g) {
+  for (const lvl of [1, 2]) {
+    const upCh = LV[lvl], lowCh = LV[lvl - 1], rampCh = lvl === 1 ? '/' : '^'
+    const seen = Array.from({ length: N }, () => Array(N).fill(false))
+    for (let z0 = 0; z0 < N; z0++) for (let x0 = 0; x0 < N; x0++) {
+      if (g[z0][x0] !== upCh || seen[z0][x0]) continue
+      const cells = [], q = [[x0, z0]]
+      seen[z0][x0] = true
+      while (q.length) {
+        const [x, z] = q.pop()
+        cells.push([x, z])
+        for (const [dx, dz] of ORTHO) {
+          const nx = x + dx, nz = z + dz
+          if (at(g, nx, nz) === upCh && !seen[nz][nx]) { seen[nz][nx] = true; q.push([nx, nz]) }
+        }
+      }
+      const served = cells.some(([x, z]) => ORTHO.some(([dx, dz]) => at(g, x + dx, z + dz) === rampCh))
+      if (served) continue
+      const opts = []
+      for (const [x, z] of cells) for (const [dx, dz] of ORTHO) {
+        if (at(g, x + dx, z + dz) === lowCh) opts.push([x + dx, z + dz])
+      }
+      if (opts.length) { const [rx, rz] = pickR(opts); g[rz][rx] = rampCh }
+    }
+  }
+}
+
+// Join every stray pocket to the biggest one. Two repairs, tried in order:
+// where a stray touches the main ground one level apart, the low side of the
+// border becomes a ramp; where nothing touches, a low trench is carved through
+// — a doorway through a wall, a cutting through a hill — and the next pass's
+// ramp repair stitches whatever the trench newly borders.
+function connectGround(g) {
+  for (let pass = 0; pass < 10; pass++) {
+    attachRamps(g)
+    const comps = walkComps(g).sort((a, b) => b.length - a.length)
+    if (comps.length <= 1) break
+    const main = comps[0]
+    const mainSet = new Set(main.map(([x, z]) => `${x},${z}`))
+    let trenched = false
+    for (let i = 1; i < comps.length && !trenched; i++) {
+      let ramped = false
+      outer: for (const [x, z] of comps[i]) {
+        const ca = g[z][x]
+        if (!grounded(ca)) continue
+        for (const [dx, dz] of ORTHO) {
+          const nx = x + dx, nz = z + dz
+          if (!mainSet.has(`${nx},${nz}`)) continue
+          const cb = at(g, nx, nz)
+          if (!grounded(cb)) continue
+          const la = SURF[ca], lb = SURF[cb]
+          if (Math.abs(la - lb) !== 1) continue
+          const hi = Math.max(la, lb)
+          if (la < lb) g[z][x] = hi === 1 ? '/' : '^'
+          else g[nz][nx] = hi === 1 ? '/' : '^'
+          ramped = true
+          break outer
+        }
+      }
+      if (ramped) continue
+      let [x, z] = pickR(comps[i])
+      const [bx, bz] = pickR(main)
+      while (x !== bx) { x += Math.sign(bx - x); g[z][x] = '.' }
+      while (z !== bz) { z += Math.sign(bz - z); g[z][x] = '.' }
+      trenched = true   // the carve invalidates the component labels; re-flood
+    }
+  }
+  attachRamps(g)
+}
+
+// rolling ground under scattered trees that block sight like walls do
+function genForest(dens, fld) {
+  const g = gridOf('.')
+  for (let z = 0; z < N; z++) for (let x = 0; x < N; x++) g[z][x] = LV[fld(x, z)]
+  const trees = Math.round(8 + dens * 40)
+  for (let i = 0; i < trees; i++) {
+    const x = R(N), z = R(N)
+    if (!grounded(g[z][x])) continue
+    g[z][x] = '#'
+    if (Math.random() < 0.3) {
+      const [dx, dz] = pickR(ORTHO)
+      if (grounded(at(g, x + dx, z + dz))) g[z + dz][x + dx] = '#'
+    }
+  }
+  return g
+}
+
+// solid rock; each room carved at the field's level, corridors running half at
+// each end's level — the seam is a step the ramp pass bridges, or, two levels
+// apart, a drop worth respecting
+function genDungeon(dens, fld) {
+  const g = gridOf('#')
+  const rooms = []
+  const nRooms = 5 + R(3)
+  for (let i = 0; i < nRooms; i++) {
+    const w = 3 + R(4), h = 3 + R(4)
+    const x = 1 + R(N - w - 2), z = 1 + R(N - h - 2)
+    // each room within one level of the last, so every corridor seam is a
+    // single step a ramp can bridge — never a two-level wall of cliff
+    let lvl = fld(x + (w >> 1), z + (h >> 1))
+    if (i > 0) lvl = THREE.MathUtils.clamp(lvl, rooms[i - 1].lvl - 1, rooms[i - 1].lvl + 1)
+    rooms.push({ x, z, w, h, lvl })
+    carveRect(g, x, z, w, h, LV[lvl])
+  }
+  const mid = (r) => [r.x + (r.w >> 1), r.z + (r.h >> 1)]
+  const dig = (ra, rb) => {
+    const pts = []
+    let [x, z] = mid(ra)
+    const b = mid(rb)
+    while (x !== b[0]) { x += Math.sign(b[0] - x); pts.push([x, z]) }
+    while (z !== b[1]) { z += Math.sign(b[1] - z); pts.push([x, z]) }
+    pts.forEach(([px, pz], i) => { g[pz][px] = LV[i < pts.length / 2 ? ra.lvl : rb.lvl] })
+  }
+  for (let i = 1; i < rooms.length; i++) dig(rooms[i - 1], rooms[i])
+  dig(rooms[0], pickR(rooms))   // one loop, so it isn't a corridor crawl
+  // rubble: pillars dropped only where all four sides stay open, so a carved
+  // 1-wide corridor is never resealed by its own decoration
+  const pillars = Math.round(dens * 12)
+  for (let i = 0; i < pillars; i++) {
+    const x = 1 + R(N - 2), z = 1 + R(N - 2)
+    if (grounded(g[z][x]) && ORTHO.every(([dx, dz]) => grounded(at(g, x + dx, z + dz)))) g[z][x] = '#'
+  }
+  return g
+}
+
+// one floor of a building: shell split into rooms with two-wide doorways;
+// each room sits at the field's level (capped at mid — no towers indoors),
+// and a door between mismatched rooms is a ramp
+function genBuilding(dens, fld) {
+  const g = gridOf('.')
+  for (let i = 0; i < N; i++) { g[0][i] = g[N - 1][i] = '#'; g[i][0] = g[i][N - 1] = '#' }
+  const rects = [{ x: 1, z: 1, w: N - 2, h: N - 2 }]
+  const gaps = []
+  const splits = 3 + Math.round(dens * 5)
+  for (let s = 0; s < splits; s++) {
+    rects.sort((a, b) => b.w * b.h - a.w * a.h)
+    const r = rects[0]
+    if (Math.max(r.w, r.h) < 7) break
+    rects.shift()
+    if (r.w >= r.h) {
+      const wx = r.x + 3 + R(r.w - 6)
+      for (let z = r.z; z < r.z + r.h; z++) g[z][wx] = '#'
+      const dz = r.z + R(r.h - 1)
+      gaps.push([wx, dz, 1, 0])
+      if (dz + 1 < r.z + r.h) gaps.push([wx, dz + 1, 1, 0])
+      rects.push({ x: r.x, z: r.z, w: wx - r.x, h: r.h }, { x: wx + 1, z: r.z, w: r.x + r.w - wx - 1, h: r.h })
+    } else {
+      const wz = r.z + 3 + R(r.h - 6)
+      for (let x = r.x; x < r.x + r.w; x++) g[wz][x] = '#'
+      const dx = r.x + R(r.w - 1)
+      gaps.push([dx, wz, 0, 1])
+      if (dx + 1 < r.x + r.w) gaps.push([dx + 1, wz, 0, 1])
+      rects.push({ x: r.x, z: r.z, w: r.w, h: wz - r.z }, { x: r.x, z: wz + 1, w: r.w, h: r.z + r.h - wz - 1 })
+    }
+  }
+  for (const r of rects) {
+    const lvl = Math.min(1, fld(r.x + (r.w >> 1), r.z + (r.h >> 1)))
+    carveRect(g, r.x, r.z, r.w, r.h, LV[lvl])
+  }
+  for (const [x, z, px, pz] of gaps) {
+    const la = at(g, x - px, z - pz) === '+' ? 1 : 0
+    const lb = at(g, x + px, z + pz) === '+' ? 1 : 0
+    g[z][x] = la === lb ? LV[la] : '/'
+  }
+  return g
+}
+
+// city blocks stamped onto rolling ground — the streets climb with the land
+function genStreets(dens, fld) {
+  const g = gridOf('.')
+  for (let z = 0; z < N; z++) for (let x = 0; x < N; x++) g[z][x] = LV[fld(x, z)]
+  const axis = () => {
+    const cuts = []
+    let p = 1 + R(2)
+    while (p < N - 4) { const b = 4 + R(3); cuts.push([p, Math.min(p + b, N - 1)]); p += b + 2 }
+    return cuts
+  }
+  const xs = axis(), zs = axis()
+  for (const [x0, x1] of xs) for (const [z0, z1] of zs) {
+    if (Math.random() < 0.25 + dens * 0.6) carveRect(g, x0, z0, x1 - x0, z1 - z0, '#')
+    // else: an empty lot, at whatever height the land runs
+  }
+  return g
+}
+
+const GEN = { forest: genForest, dungeon: genDungeon, building: genBuilding, streets: genStreets }
+let TERRAIN = 'forest'
+
+// Seat everyone on the biggest walkable pocket, ordered by walking distance
+// from a fresh party corner — allies together, foes strung out from a skirmish
+// away to the far end of the board, one of them airborne as ever.
+function seatUnits(g) {
+  const comps = walkComps(g).sort((a, b) => b.length - a.length)
+  const main = comps[0]
+  // off the board is not a key — x + z*N would alias (-1, z) onto (N-1, z-1)
+  const key = (x, z) => (x < 0 || z < 0 || x >= N || z >= N ? -1 : x + z * N)
+  const inMain = new Set(main.map(([x, z]) => key(x, z)))
+  let seed = pickR(main)
+  for (let t = 0; t < 40; t++) {
+    const c = pickR(main)
+    const open = ORTHO.filter(([dx, dz]) => inMain.has(key(c[0] + dx, c[1] + dz))).length
+    if (g[c[1]][c[0]] === '.' && open >= 3) { seed = c; break }
+  }
+  const order = [], seen = new Set([key(...seed)])
+  let q = [seed]
+  while (q.length) {
+    const nq = []
+    for (const [x, z] of q) {
+      order.push([x, z])
+      for (const [dx, dz] of ORTHO) {
+        const k = key(x + dx, z + dz)
+        if (k >= 0 && inMain.has(k) && !seen.has(k)) { seen.add(k); nq.push([x + dx, z + dz]) }
+      }
+    }
+    q = nq
+  }
+  // a ramp is not a place to stand
+  const seats = order.filter(([x, z]) => grounded(g[z][x]))
+  const used = new Set()
+  const seat = (u, i) => {
+    let j = Math.min(i, seats.length - 1)
+    while (used.has(j)) j = (j + 1) % seats.length
+    used.add(j)
+    const [x, z] = seats[j]
+    u.x = x; u.z = z; u.a = SURF[g[z][x]]
+  }
+  PARTY.forEach((u, i) => seat(u, i))
+  const foes = UNITS.filter((u) => u.team === 'foe')
+  const SPREAD = [0.16, 0.28, 0.4, 0.52, 0.66, 0.8, 0.94]
+  foes.forEach((u, i) => seat(u, Math.floor((SPREAD[i] ?? 0.9) * seats.length)))
+  const flyer = foes[3]
+  flyer.a = Math.min(Math.ceil(flyer.a) + 2, MAX_ALT)
+}
+
+function regenerate() {
+  const dens = Number(densRange.value) / 100
+  const fld = heightField(Number(hillRange.value) / 100, Number(valeRange.value) / 100)
+  SKIN = TERRAIN
+  const g = GEN[TERRAIN](dens, fld)
+  connectGround(g)
+  MAP = g.map((row) => row.join(''))
+  buildBoard()
+  paintMiniBase()
+  seatUnits(g)
+  UNITS.forEach((u, i) => { HOME[i] = { x: u.x, z: u.z, a: u.a } })   // reset now means THIS board
+  S.who = 0
+  S.anim = null
+  S.approach = null
+  S.followUp = null
+  S.listOpen = false
+  armed = false
+  userZoomed = userRotated = false
+  resize()
+  setView(S.at.x, S.at.z)
+  recompute()
+  say(`new ground — ${TERRAIN}`)
+}
+
+const densRange = document.getElementById('densRange')
+const hillRange = document.getElementById('hillRange')
+const valeRange = document.getElementById('valeRange')
+for (const b of document.querySelectorAll('[data-terr]')) {
+  b.onclick = () => {
+    TERRAIN = b.dataset.terr
+    for (const o of document.querySelectorAll('[data-terr]')) o.setAttribute('aria-pressed', String(o === b))
+    regenerate()
+  }
+}
+// sliders regenerate on release — dragging one is asking a question of the dial,
+// and the answer is a board
+densRange.onchange = hillRange.onchange = valeRange.onchange = regenerate
+document.getElementById('genBtn').onclick = regenerate
+
+// --------------------------------------------------------------------- loop
+addEventListener('resize', resize)
+addEventListener('orientationchange', () => setTimeout(resize, 120))
+
+// The top carries a title and one glyph; the bottom carries every control. So
+// the board is pushed toward the top rather than centred. A view offset slides
+// the frustum window instead of moving the camera, which shifts the picture
+// without changing the angle or the scale — and `project` respects it, so the
+// fit below still frames against the shifted window.
+const LIFT = 0.1
+
+function resize() {
+  const w = innerWidth, h = innerHeight
+  const portrait = w / h < 0.85
+  renderer.setSize(w, h)
+  camera.aspect = w / h
+  // only in portrait — landscape has no vertical room to give away
+  camera.setViewOffset(w, h, 0, portrait ? h * LIFT : 0, w, h)
+
+  // At 45° the board is a diamond 14 units wide and a portrait fit is width-bound,
+  // wasting the vertical screen. Axis-aligned it is 10 wide — ~40% more square.
+  if (!userRotated) {
+    cam.az = camGoal.az = portrait ? 0 : Math.PI * 0.25
+    cam.pol = camGoal.pol = portrait ? 0.8 : 0.92
+  }
+  if (!userZoomed) fitCamera()
+}
+let userZoomed = false
+let userRotated = false
+
+function placeCamera(rad) {
+  camera.position.set(
+    FOCUS.x + rad * Math.sin(cam.pol) * Math.sin(cam.az),
+    FOCUS.y + rad * Math.cos(cam.pol),
+    FOCUS.z + rad * Math.sin(cam.pol) * Math.cos(cam.az),
+  )
+  camera.lookAt(FOCUS)
+  camera.updateMatrixWorld()
+}
+
+// The camera frames the WINDOW rather than the board. Everything outside it is
+// still drawn and simply runs off the edges, which is what makes the board feel
+// larger than the screen instead of merely scaled down to fit it.
+function fitCamera() {
+  const c = world(S.view.x, S.view.z)
+  const half = VIEW / 2
+  const pts = []
+  for (const dx of [-half, half])
+    for (const dz of [-half, half])
+      for (const y of [0, yOf(MAX_ALT)]) pts.push(new THREE.Vector3(c.x + dx, y, c.z + dz))
+
+  let rad = camGoal.rad
+  for (let i = 0; i < 6; i++) {
+    placeCamera(rad)
+    let over = 0
+    for (const q of pts) {
+      const p = q.clone().project(camera)
+      over = Math.max(over, Math.abs(p.x) / 0.95, Math.abs(p.y) / 0.9)
+    }
+    rad = THREE.MathUtils.clamp(rad * over, 8, 48)
+  }
+  cam.rad = camGoal.rad = rad
+}
+
+// Moving the window is the one thing that changes what the camera looks at.
+function setView(x, z) {
+  const lo = VIEW / 2 - 0.5, hi = N - VIEW / 2 - 0.5
+  S.view.x = THREE.MathUtils.clamp(x, lo, hi)
+  S.view.z = THREE.MathUtils.clamp(z, lo, hi)
+  const c = world(S.view.x, S.view.z)
+  FOCUS.set(c.x, 0.25, c.z)
+  if (!userZoomed) fitCamera()   // panning keeps whatever zoom you chose
+  drawMini()
+}
+
+// Whoever you are commanding has to stay on screen, or taking command of someone
+// across the map would simply lose them.
+function keepInView(u) {
+  const m = VIEW / 2 - 1.5
+  if (Math.abs(u.x - S.view.x) > m || Math.abs(u.z - S.view.z) > m) setView(u.x, u.z)
+}
+
+const STEP_MS = 115
+let last = performance.now()
+
+function frame(now) {
+  const dt = Math.min(now - last, 50)
+  last = now
+
+  cam.az += (camGoal.az - cam.az) * 0.22
+  cam.pol += (camGoal.pol - cam.pol) * 0.22
+  cam.rad += (camGoal.rad - cam.rad) * 0.18
+  placeCamera(cam.rad)
+  scene.fog.near = cam.rad * 0.85
+  scene.fog.far = cam.rad * 2.4
+
+  if (S.anim) {
+    S.anim.t += dt / STEP_MS
+    while (S.anim.t >= 1 && S.anim.i < S.anim.path.length - 1) {
+      S.anim.t -= 1
+      S.anim.i++
+    }
+    const i = S.anim.i
+    if (i >= S.anim.path.length - 1) {
+      const [x, z, a] = S.anim.path[S.anim.path.length - 1]
+      Object.assign(S.at, { x, z, a })
+      S.anim = null
+      recompute()
+    } else {
+      const [ax, az, aa] = S.anim.path[i]
+      const [bx, bz, ba] = S.anim.path[i + 1]
+      const t = S.anim.t
+      const e = t * t * (3 - 2 * t)
+      const ya = yOf(aa), yb = yOf(ba)
+      const hop = S.mode === 'walk' && Math.abs(yb - ya) > 0.01 ? Math.sin(Math.PI * t) * 0.2 : 0
+      const pa = world(ax, az), pb = world(bx, bz)
+      const u = S.at, m = u.mesh
+      m.position.set(
+        pa.x + (pb.x - pa.x) * e,
+        ya + (yb - ya) * e + TOKEN_LIFT + hop,
+        pa.z + (pb.z - pa.z) * e,
+      )
+      u.shell.position.copy(m.position)
+      const cx = Math.round(m.position.x + (N - 1) / 2)
+      const cz = Math.round(m.position.z + (N - 1) / 2)
+      const s = surf(cx, cz), y0 = yOf(s), y1 = m.position.y - TOKEN_LIFT
+      // the pad slides along the ground under the mover, like a shadow
+      u.pad.position.set(m.position.x, y0 + 0.016, m.position.z)
+      if (y1 > y0 + 1e-3) {
+        u.tether.line.position.set(m.position.x, (y0 + y1) / 2, m.position.z)
+        u.tether.line.scale.y = y1 - y0
+        u.tether.ring.position.set(world(cx, cz).x, y0 + 0.04, world(cx, cz).z)
+        u.tether.line.visible = u.tether.ring.visible = true
+      } else {
+        u.tether.line.visible = u.tether.ring.visible = false
+      }
+    }
+  }
+
+  renderer.render(scene, camera)
+  requestAnimationFrame(frame)
+}
+
+setView(S.view.x, S.view.z)
+resize()
+recompute()
+requestAnimationFrame(frame)
+</script>

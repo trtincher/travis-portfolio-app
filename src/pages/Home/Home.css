@@ -107,6 +107,16 @@
   margin-bottom: var(--space-5);
 }
 
+/* One-line framing under a section heading. */
+.section-intro {
+  max-width: var(--measure);
+  margin-top: calc(var(--space-5) * -1 + var(--space-1));
+  margin-bottom: var(--space-5);
+  font-size: var(--step-body);
+  line-height: var(--line-body);
+  color: var(--text-meta);
+}
+
 /* ============ about ============ */
 
 .about-text {

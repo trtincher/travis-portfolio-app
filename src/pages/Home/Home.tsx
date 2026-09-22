@@ -22,6 +22,9 @@ import resumePDF from '../../assets/Travis-Resume.pdf';
 
 const skillGroups = Object.entries(resumeData.skills) as [string, string[]][];
 
+const projectsIntro =
+  "Small playable experiments from a games pipeline I run with AI agents; each is a few hundred lines, built in an afternoon. Tap one on your phone.";
+
 const Home: React.FC = () => {
   return (
     <div className="home">
@@ -107,7 +110,8 @@ const Home: React.FC = () => {
 
         <section className="section" id="projects" aria-labelledby="projects-heading">
           <div className="wrap">
-            <h2 className="section-heading" id="projects-heading">Projects</h2>
+            <h2 className="section-heading" id="projects-heading">Projects and toys</h2>
+            <p className="section-intro">{projectsIntro}</p>
             <PortDeck />
           </div>
         </section>

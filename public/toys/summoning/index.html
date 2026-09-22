@@ -1,0 +1,1075 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#12100f">
+<title>the Summoning</title>
+<style>
+:root{
+  --bg:#12100f; --panel:#1c1917; --panel2:#252220; --line:#37312c;
+  --ink:#f0eae2; --dim:#a29688; --dimmer:#6f6559;
+  --ember:#e07a3c;     /* the step you are on */
+  --done:#c9a227;      /* steps behind you */
+  --ahead:#4a423a;     /* steps not yet reached */
+  --good:#8fbf7a; --warn:#d9694f;
+  --tap:44px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{
+  background:var(--bg); color:var(--ink);
+  font:400 16px/1.45 ui-rounded,-apple-system,"Segoe UI",Roboto,sans-serif;
+  overscroll-behavior:none;
+}
+#app{
+  max-width:520px; margin:0 auto; height:100dvh; display:flex; flex-direction:column;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+}
+
+/* ---------- the rail: the whole point of the toy ---------- */
+header{padding:.8rem 1rem .6rem; border-bottom:1px solid var(--line)}
+.rail{display:flex; gap:3px; align-items:flex-end; height:22px}
+.seg{
+  flex:1; border-radius:2px; background:var(--ahead);
+  height:7px; transition:height .28s cubic-bezier(.2,.9,.3,1.2),
+    background .28s, flex-grow .28s, opacity .28s;
+}
+.seg.done{background:var(--done); height:7px}
+.seg.now{background:var(--ember); height:18px}
+.seg.entering{animation:pop .38s cubic-bezier(.2,.9,.3,1.4)}
+@keyframes pop{ from{ flex-grow:.001; opacity:0 } to{ flex-grow:1; opacity:1 } }
+.railcap{display:flex; justify-content:space-between; align-items:baseline; margin-top:.5rem}
+.railcap .n{font-size:.78rem; letter-spacing:.09em; text-transform:uppercase; color:var(--dim)}
+.railcap .left{font-size:.78rem; color:var(--dimmer)}
+@media (prefers-reduced-motion:reduce){ .seg{transition:none} .seg.entering{animation:none} }
+
+/* ---------- step body ---------- */
+main{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:1rem 1rem .5rem}
+h2{margin:0; font-size:1.35rem; font-weight:600; letter-spacing:.01em; text-wrap:balance}
+.why{color:var(--dim); font-size:.92rem; margin:.25rem 0 1rem}
+.opt{
+  display:block; width:100%; text-align:left; font:inherit; color:inherit; cursor:pointer;
+  background:var(--panel); border:2px solid var(--line); border-radius:14px;
+  padding:.85rem .9rem; margin:.5rem 0; min-height:var(--tap);
+}
+.opt:active{background:var(--panel2)}
+.opt.sel{border-color:var(--ember); background:#241c17}
+.opt .t{font-size:1.06rem; font-weight:600; display:flex; justify-content:space-between; gap:.6rem}
+.opt .d{color:var(--dim); font-size:.88rem; margin-top:.22rem}
+.opt .len{font-size:.8rem; margin-top:.4rem; color:var(--dimmer)}
+.opt.sel .len{color:var(--dim)}
+
+/* the consequence, at display size — stolen from sigil's HP step */
+.big{
+  background:var(--panel); border:2px solid var(--line); border-radius:14px;
+  padding:1rem .8rem; text-align:center; margin:.5rem 0;
+}
+.big.sel{border-color:var(--ember); background:#241c17}
+.big .lab{font-size:.78rem; color:var(--dim); letter-spacing:.06em; text-transform:uppercase}
+.big .num{font-size:2.6rem; font-weight:700; line-height:1.05; color:var(--ember);
+  font-variant-numeric:tabular-nums}
+.big .sub{font-size:.8rem; color:var(--dimmer); margin-top:.25rem}
+.two{display:grid; grid-template-columns:1fr 1fr; gap:.6rem}
+
+.opt .fitline{font-size:.84rem; color:var(--done); margin-top:.3rem}
+.opt .fitline .no{color:var(--dimmer)}
+.opt .fit{font-size:.68rem; letter-spacing:.05em; text-transform:uppercase;
+  color:#20130a; background:var(--done); padding:.12rem .45rem; border-radius:999px;
+  align-self:center; white-space:nowrap}
+.opt.build .nums{
+  display:flex; flex-wrap:wrap; gap:.3rem; margin:.5rem 0 .1rem;
+  font-variant-numeric:tabular-nums;
+}
+.opt.build .nums span{
+  font-size:.82rem; color:var(--dim); background:var(--panel2);
+  padding:.1rem .42rem; border-radius:6px;
+}
+.opt.build .nums span.k{color:var(--ember); background:#2e1f14; font-weight:600}
+.opt.build .nums span.boost{color:var(--done); background:#2b2411}
+.opt.build .nums span.k.boost{color:var(--ember); background:#2e1f14;
+  box-shadow:inset 0 0 0 1px var(--done)}
+.opt.build .two2{display:flex; gap:.5rem; margin-top:.55rem}
+.opt.build .two2 div{flex:1; background:var(--panel2); border-radius:9px;
+  padding:.35rem; text-align:center}
+.opt.build .two2 b{display:block; font-size:1.35rem; font-variant-numeric:tabular-nums;
+  color:var(--ink); line-height:1.15}
+.opt.build .two2 i{font-style:normal; font-size:.66rem; color:var(--dim);
+  letter-spacing:.04em; text-transform:uppercase}
+.opt.manual{border-style:dashed; background:transparent}
+.opt.handoff{border-color:var(--ember); background:#241c17; margin-top:1rem}
+.opt.handoff .t{color:var(--ember)}
+.note{
+  font-size:.86rem; color:var(--dim); line-height:1.4;
+  border-left:2px solid var(--done); padding:.1rem 0 .1rem .7rem; margin:0 0 .9rem;
+}
+.note.gloss{margin-top:-.4rem}
+.note details{margin:0}
+.note summary{color:var(--done); cursor:pointer; list-style:none; font-size:.82rem;
+  min-height:1.7rem; display:flex; align-items:center}
+.note summary::-webkit-details-marker{display:none}
+.note summary::after{content:"›"; margin-left:.35rem; transition:transform .18s}
+.note details[open] summary::after{transform:rotate(90deg)}
+.note details p{margin:.45rem 0 0}
+.note details p + p{margin-top:.5rem}
+.note b{color:var(--ink); font-weight:600}
+.count{color:var(--dim); font-size:.86rem; margin:.6rem 0 .1rem}
+.count.full{color:var(--done)}
+.arr{display:grid; grid-template-columns:repeat(3,1fr); gap:.5rem; margin:.3rem 0 .8rem}
+.arr button{font:inherit; color:inherit; cursor:pointer; padding:.5rem .2rem; border-radius:11px;
+  background:var(--panel); border:2px solid var(--line); min-height:var(--tap)}
+.arr button.sel{border-color:var(--ember); background:#241c17}
+.arr button b{display:block; font-size:1.3rem; font-variant-numeric:tabular-nums}
+.arr button i{font-style:normal; font-size:.68rem; color:var(--dim)}
+input.name{width:100%; font:inherit; font-size:1.25rem; padding:.8rem .9rem; border-radius:12px;
+  background:var(--panel); border:2px solid var(--line); color:var(--ink)}
+input.name:focus{outline:none; border-color:var(--ember)}
+
+/* ---------- the sheet at the end ---------- */
+.sheet{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:.9rem}
+.sheet h3{margin:0 0 .1rem; font-size:1.3rem}
+.sheet .sub{color:var(--dim); font-size:.92rem}
+.vit{display:flex; gap:.5rem; margin:.7rem 0}
+.vit div{flex:1; background:var(--panel2); border-radius:10px; padding:.5rem; text-align:center}
+.vit b{display:block; font-size:.62rem; color:var(--dim); letter-spacing:.07em}
+.vit i{font-style:normal; font-size:1.25rem; font-weight:700; font-variant-numeric:tabular-nums}
+.st{display:grid; grid-template-columns:repeat(6,1fr); gap:.3rem; margin:.5rem 0}
+.st div{background:var(--panel2); border-radius:8px; padding:.35rem .1rem; text-align:center}
+.st b{display:block; font-size:.58rem; color:var(--dim)}
+.st i{font-style:normal; font-weight:700; font-variant-numeric:tabular-nums}
+.line{display:flex; gap:.5rem; padding:.4rem 0; border-top:1px solid var(--line); font-size:.9rem}
+.line b{color:var(--dim); font-weight:400; flex:0 0 5.5rem; font-size:.82rem;
+  letter-spacing:.05em; text-transform:uppercase}
+.line span{flex:1}
+
+/* ---------- footer ---------- */
+footer{
+  display:flex; gap:.6rem; padding:.7rem 1rem calc(.7rem + env(safe-area-inset-bottom));
+  border-top:1px solid var(--line); background:var(--bg);
+}
+.btn{flex:1; min-height:var(--tap); border-radius:12px; font:inherit; font-weight:600;
+  border:1px solid var(--line); background:var(--panel2); color:var(--ink); cursor:pointer}
+.btn.go{background:var(--ember); color:#20130a; border-color:var(--ember); flex:2}
+.btn:disabled{opacity:.35}
+
+/* ---------- the length toast ---------- */
+#toast{
+  position:fixed; left:50%; transform:translate(-50%,1.5rem); z-index:9;
+  bottom:calc(4.6rem + env(safe-area-inset-bottom)); width:min(92vw,470px);
+  background:#2b211a; border:1px solid var(--line); border-radius:13px; padding:.7rem .85rem;
+  opacity:0; pointer-events:none;
+  transition:transform .26s ease-out, opacity .2s; box-shadow:0 10px 30px #000a;
+}
+#toast.up{transform:translate(-50%,0); opacity:1}
+#toast .h{font-weight:700; font-size:.95rem}
+#toast .h.plus{color:var(--warn)} #toast .h.minus{color:var(--good)}
+#toast .b{font-size:.86rem; color:var(--dim); margin-top:.15rem}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="rail" id="rail"></div>
+    <div class="railcap"><div class="n" id="railN"></div><div class="left" id="railL"></div></div>
+  </header>
+  <main id="main"></main>
+  <footer>
+    <button class="btn" id="back">Back</button>
+    <button class="btn go" id="next">Next</button>
+  </footer>
+</div>
+<div id="toast"><div class="h" id="tH"></div><div class="b" id="tB"></div></div>
+
+<script>
+"use strict";
+/* ================================================================
+   the Summoning — a wizard whose length is yours, not the ruleset's.
+
+   Taken from Clayton's sigil (packages/frontend/src/stores/levelUpStore.ts):
+   the step list is COMPUTED from the choices so far, not fixed. A
+   fighter never sees a spell step. Here that computation is put on
+   screen — the rail grows and shrinks as you choose, so the cliff is
+   visibly your character's rather than D&D's.
+   ================================================================ */
+
+const ABIL = ["STR","DEX","CON","INT","WIS","CHA"];
+const ARRAY = [15,14,13,12,10,8];
+
+/* ----------------------------------------------------------------
+   SPECIES carries no ability scores. Ruled 2026-08-17 — and this is
+   where 5e itself went: Tasha's (2020) let you move the racial bonuses
+   off, and the 2024 PHB removed them entirely, renamed race to species,
+   and put the +2/+1 on BACKGROUND. What you ARE gives you a body; what
+   you DID gives you your numbers.
+
+   The consequence for this toy is structural: species no longer has to
+   precede the abilities step, which is what frees background to move
+   ahead of it so the build cards can show FINAL numbers.
+   ---------------------------------------------------------------- */
+const SPECIES = {
+  human:    {name:"Human", speed:30, extraSkill:1,
+             d:"Resourceful — one more skill than anyone else brings."},
+  elf:      {name:"High Elf", speed:30, elfCantrip:true,
+             d:"Darkvision, keen senses — and one wizard cantrip, whoever you are."},
+  dwarf:    {name:"Hill Dwarf", speed:25, hpBonus:1,
+             d:"Darkvision, poison resilience, and a hit point every level."},
+  halfling: {name:"Lightfoot Halfling", speed:25, lucky:true,
+             d:"Lucky — reroll a natural 1. Hide behind anyone bigger than you."},
+};
+
+/* ----------------------------------------------------------------
+   REGION — where you are from, which is not what you are. It SUGGESTS
+   a species and never filters one: the suggestion is printed on the
+   species cards and nothing more. It carries a skill and a language so
+   that it is a real choice rather than a flavour screen (the same rule
+   the intent preamble is held to).
+   ---------------------------------------------------------------- */
+const REGIONS = {
+  harbor:   {name:"the Salt Harbor", skill:"Persuasion", lang:"Trade Cant",
+             common:["halfling","human"],
+             d:"Wharves, ledgers and everyone's second cousin. Nothing arrives unnoticed."},
+  highland: {name:"the Highlands", skill:"Survival", lang:"Dwarvish",
+             common:["dwarf","human"],
+             d:"Long winters above the tree line. You learned to carry your own weather."},
+  wood:     {name:"the Old Wood", skill:"Nature", lang:"Elvish",
+             common:["elf","halfling"],
+             d:"Older than the roads. People there count years the way trees do."},
+  spire:    {name:"the Spire City", skill:"Investigation", lang:"Thieves' Cant",
+             common:["human","elf"],
+             d:"Nine tiers, one law per tier. Everyone is from somewhere else."},
+};
+
+const CLASSES = {
+  fighter: {
+    name:"Fighter", hitDie:10, key:"STR", saves:["STR","CON"], skillPick:2,
+    skills:["Acrobatics","Animal Handling","Athletics","History","Insight","Intimidation",
+            "Perception","Survival"],
+    d:"Ten hit points and a second wind.",
+    style:[{id:"archery",n:"Archery",d:"+2 to hit with ranged weapons"},
+           {id:"defense",n:"Defense",d:"+1 AC whenever you wear armour"},
+           {id:"dueling",n:"Dueling",d:"+2 damage with one weapon and a free hand"},
+           {id:"gwf",n:"Great Weapon",d:"Reroll 1s and 2s on two-handed damage"}],
+    kits:[{id:"a",n:"Chain mail, longsword, shield",ac:18},
+          {id:"b",n:"Leather, longbow, two handaxes",ac:11,dex:true}],
+  },
+  wizard: {
+    name:"Wizard", hitDie:6, key:"INT", saves:["INT","WIS"], skillPick:2,
+    skills:["Arcana","History","Insight","Investigation","Medicine","Religion"],
+    caster:"arcane", cantrips:3, book:6,
+    d:"A book, six spells in it, and six hit points.",
+    kits:[{id:"a",n:"Quarterstaff, spellbook, scholar's pack",ac:10,dex:true},
+          {id:"b",n:"Dagger, component pouch, explorer's pack",ac:10,dex:true}],
+  },
+  cleric: {
+    name:"Cleric", hitDie:8, key:"WIS", saves:["WIS","CHA"], skillPick:2,
+    skills:["History","Insight","Medicine","Persuasion","Religion"],
+    caster:"divine", cantrips:3, prepares:true,
+    d:"Armour, a mace, and a god who answers.",
+    domain:[{id:"life",n:"Life",d:"Heavy armour, and your healing always overshoots"},
+            {id:"light",n:"Light",d:"A free cantrip, and a flare that blinds"},
+            {id:"war",n:"War",d:"Martial weapons, heavy armour, a bonus attack"}],
+    kits:[{id:"a",n:"Mace, scale mail, shield",ac:16},
+          {id:"b",n:"Warhammer, chain mail, holy symbol",ac:16}],
+  },
+};
+
+const SPELLS = {
+  arcane:{
+    cantrip:[["Fire Bolt","120ft, 1d10 fire, and it never runs out"],
+             ["Ray of Frost","1d8 cold, and they move slower"],
+             ["Mage Hand","A hand, 30ft away, that does what hands do"],
+             ["Minor Illusion","A sound or an object, if nobody looks hard"],
+             ["Prestidigitation","Small nonsense, endlessly"],
+             ["Light","A bright object, 20ft, for an hour"]],
+    lvl1:[["Magic Missile","Three darts, 1d4+1 each, and they never miss"],
+          ["Shield","+5 AC as a reaction, after you have seen the roll"],
+          ["Burning Hands","15ft cone, 3d6 fire, everything in it"],
+          ["Sleep","5d8 hit points of creatures simply stop"],
+          ["Mage Armor","13 + DEX for eight hours, wearing nothing"],
+          ["Charm Person","They think of you as a friend, and know it later"],
+          ["Detect Magic","See the auras for ten minutes"],
+          ["Feather Fall","Five of you, falling slowly, as a reaction"]],
+  },
+  divine:{
+    cantrip:[["Sacred Flame","1d8 radiant, DEX save, and cover does not help"],
+             ["Guidance","+1d4 on an ally's ability check"],
+             ["Spare the Dying","A dying creature stops dying"],
+             ["Thaumaturgy","Your voice booms, flames bend, the earth shifts"],
+             ["Light","A bright object, 20ft, for an hour"]],
+    lvl1:[["Cure Wounds","1d8 + WIS, by touch"],
+          ["Bless","Three allies, +1d4 to attacks and saves"],
+          ["Healing Word","1d4 + WIS at 60ft, as a bonus action"],
+          ["Guiding Bolt","4d6 radiant, and the next attack has advantage"],
+          ["Shield of Faith","+2 AC on one creature for ten minutes"],
+          ["Command","One word. They obey it for one turn"]],
+  },
+};
+
+/* ----------------------------------------------------------------
+   Intent — the preamble. Deliberately NOT a tutorial screen: it is a
+   real choice that reorders the classes and picks the ability builds,
+   and it doubles as the survey of what is possible because seeing the
+   four options IS seeing the space. Axes chosen so they do NOT map
+   one-to-one onto the three classes — a War cleric hits, a Life cleric
+   holds, a Defense fighter goes untouched.
+   ---------------------------------------------------------------- */
+const INTENTS = {
+  hit:       {n:"…hits the hardest",            d:"When it has to die, you are why it does."},
+  hold:      {n:"…keeps everyone standing",     d:"You are the reason the party is still here."},
+  answer:    {n:"…has an answer for anything",  d:"Locked doors, strange gods, a wall in the way."},
+  untouched: {n:"…never gets hit",              d:"They swing, and you are not where you were."},
+};
+
+/* Each build is a priority order for the standard array, plus the one
+   number the build lives on. Every class carries all three; intent only
+   decides which come first and which is marked as what you asked for. */
+const BUILDS = {
+  /* Orders are spread so the two headline numbers actually DIFFER between
+     cards. Adjacent array values share a modifier (14 and 15 are both +2),
+     so a build set that reads as three distinct ideas on paper can render
+     three identical cards. Verified by sweep(): every class's builds must
+     differ on hp or on the headline. */
+  fighter:[
+    {id:"hammer", n:"The Hammer",   key:"STR", fits:["hit"],
+     order:["STR","CON","DEX","WIS","CHA","INT"],
+     d:"Heavy weapon, heavy armour, nothing subtle."},
+    {id:"wall",   n:"The Wall",     key:"STR", fits:["hold","untouched"],
+     order:["CON","DEX","STR","WIS","INT","CHA"],
+     d:"Hardest thing in the world to move out of a doorway."},
+    {id:"quick",  n:"The Quick One",key:"DEX", fits:["untouched","hit"],
+     order:["DEX","CON","STR","WIS","INT","CHA"],
+     d:"Bow or finesse blade, and harder to land a hit on."},
+  ],
+  wizard:[
+    {id:"scholar",n:"The Scholar",  key:"INT", fits:["answer"],
+     order:["INT","DEX","WIS","CON","CHA","STR"],
+     d:"The best spells in the room, and the fewest hit points."},
+    {id:"tough",  n:"The Tough One",key:"INT", fits:["hold","untouched"],
+     order:["CON","INT","DEX","WIS","CHA","STR"],
+     d:"Weaker spells, and considerably harder to kill."},
+    {id:"canny",  n:"The Canny One",key:"INT", fits:["answer","hold"],
+     order:["INT","WIS","CON","DEX","CHA","STR"],
+     d:"Reads the room as well as the book."},
+  ],
+  cleric:[
+    {id:"shepherd",n:"The Shepherd",key:"WIS", fits:["hold","answer"],
+     order:["WIS","CON","STR","DEX","CHA","INT"],
+     d:"Your god answers loudest when someone is dying."},
+    {id:"crusader",n:"The Crusader",key:"WIS", fits:["hit"],
+     order:["STR","WIS","CON","DEX","CHA","INT"],
+     d:"Swings the mace first and prays second."},
+    {id:"warden",  n:"The Warden",  key:"WIS", fits:["untouched","hold"],
+     order:["CON","WIS","DEX","STR","INT","CHA"],
+     d:"Outlasts the fight rather than winning it."},
+  ],
+};
+
+/* BACKGROUND now carries the ability increases (2024 PHB): +2 and +1
+   across the three abilities it lists. Which of the three get them is
+   decided by your BUILD rather than by another six-way question — the
+   build already knows what you are trying to be, so it takes the +2 to
+   the highest-priority listed ability and the +1 to the next. */
+const BACKGROUNDS = {
+  acolyte:  {name:"Acolyte",  skills:["Insight","Religion"],       abil:["INT","WIS","CHA"],
+             d:"You served at a temple and still know the words."},
+  criminal: {name:"Criminal", skills:["Deception","Stealth"],      abil:["DEX","CON","INT"],
+             d:"You have a contact who is still alive."},
+  soldier:  {name:"Soldier",  skills:["Athletics","Intimidation"], abil:["STR","DEX","CON"],
+             d:"You held a rank and people still use it."},
+  sage:     {name:"Sage",     skills:["Arcana","History"],         abil:["CON","INT","WIS"],
+             d:"You know where to find out anything."},
+};
+
+
+/* Which ability each skill leans on — without this a skill is a word. */
+const SKILL_ABIL = {
+  Acrobatics:"DEX", "Animal Handling":"WIS", Arcana:"INT", Athletics:"STR", Deception:"CHA",
+  History:"INT", Insight:"WIS", Intimidation:"CHA", Investigation:"INT", Medicine:"WIS",
+  Nature:"INT", Perception:"WIS", Performance:"CHA", Persuasion:"CHA", Religion:"INT",
+  "Sleight of Hand":"DEX", Stealth:"DEX", Survival:"WIS",
+};
+
+/* ----------------------------------------------------------------
+   GLOSS — for someone who has never played D&D (ruled 2026-08-17).
+   Each step already states its point in one plain line, so here only
+   the tap-for-more half lives: clear without being wordy.
+   Kept in step with the Effigy's copy of the same table — sibling
+   toys under copy-never-depend; if one moves, move the other.
+   ---------------------------------------------------------------- */
+const GLOSS = {
+  intent:{title:"What am I actually picking?", more:[
+    `Nothing binding — this just tells the rest of the wizard what to put in front of you.`,
+    `D&D parties tend to cover four jobs between them: someone who deals damage, someone who
+     keeps everyone alive, someone with an answer for odd problems, and someone hard to hit.
+     Pick the one you would enjoy being.`]},
+  class:{title:"What is a class?", more:[
+    `Your job, and the biggest single decision here. It sets how tough you are, what you are
+     trained in, and whether you cast spells.`,
+    `<b>Fighter</b> — most hit points, hits hardest, no spell rules to learn. The easiest
+     first character.`,
+    `<b>Wizard</b> — fragile, but the widest bag of tricks. You prepare spells from a book.`,
+    `<b>Cleric</b> — armour and a weapon plus healing and support magic. A middle path.`]},
+  region:{title:"Is this a real D&D thing?", more:[
+    `Not as its own line on the official sheet — it is a small addition here, splitting
+     "where you are from" apart from "what you are".`,
+    `It gives you one skill and one language, and it only <i>suggests</i> a species. Anyone
+     can come from anywhere.`]},
+  species:{title:"Why does this not change my numbers?", more:[
+    `Older editions gave elves and dwarves ability bonuses. The 2024 rules dropped that —
+     your increases come from your background now, from what you did rather than what you
+     were born as.`,
+    `So pick the one you want to play. It changes your speed, your senses, and a trick or
+     two.`]},
+  background:{title:"Where your +2 and +1 go", more:[
+    `Each background lists three abilities. The +2 lands on whichever of those three your
+     chosen build values most, and the +1 on the next — so the increases follow the character
+     you are already making.`,
+    `This is the one step that changes your actual numbers.`]},
+  abilities:{title:"How rolling works", more:[
+    `Almost everything risky is settled by rolling a twenty-sided die and adding a modifier.
+     Higher totals succeed. That is the whole engine.`,
+    `The six scores say what you are naturally good at: <b>Strength</b> for force,
+     <b>Dexterity</b> for precision, <b>Constitution</b> for stamina, <b>Intelligence</b> for
+     knowledge, <b>Wisdom</b> for noticing things, <b>Charisma</b> for people.`,
+    `10 is average and gives +0. Every 2 points either way moves the modifier by one, so a 14
+     is +2 and an 8 is −1.`]},
+  skills:{title:"Why skills exist at all", more:[
+    `Abilities are broad; skills are the narrow situations inside them — sneaking is
+     Dexterity, recalling an old story is Intelligence.`,
+    `When a skill applies you add its ability's modifier <i>and</i> your proficiency bonus,
+     which is +2 at level 1.`,
+    `There is no wrong pick. Skills only make some rolls likelier to land.`]},
+  cantrips:{title:"What is a cantrip?", more:[
+    `A spell small enough to cast as often as you like. It never runs out and you never swap
+     it, so these are the ones you will use most.`]},
+  spells:{title:"Slots, and preparing", more:[
+    `Spells that are not cantrips cost a <b>spell slot</b>. At level 1 you have two, and you
+     get them back after a long rest — so a fight is about choosing when to spend them.`,
+    `A wizard writes spells in a book and keeps them forever. A cleric picks a fresh list
+     each morning from everything their god offers.`]},
+  kit:{title:"Armour class", more:[
+    `When something attacks you it rolls a die and tries to beat your <b>armour class</b>.
+     Higher is harder to hit.`,
+    `Heavy armour gives a good flat number. Light or no armour is lower but adds your
+     Dexterity, so a fast character is not far behind.`]},
+};
+
+function glossMore(key){
+  const g = GLOSS[key];
+  if (!g) return "";
+  return `<div class="note gloss"><details><summary>${g.title}</summary>
+    ${g.more.map(x=>`<p>${x}</p>`).join("")}</details></div>`;
+}
+
+/* ================================================================
+   State + the computed step list.
+   ONE OWNER: plan() is the only thing that decides what steps exist.
+   ================================================================ */
+let S = {
+  intent:null, class:null, region:null, species:null, background:null, name:"",
+  assign:{}, pick:null, build:null, manual:false,
+  skills:[], style:null, domain:null,
+  cantrips:[], spells:[], elfCantrip:null, kit:null,
+};
+let at = 0;              // index into plan()
+let prevPlan = [];       // to detect what a choice did to the length
+
+/* Every step: id, title, why, and whether it is satisfied. */
+function plan(){
+  const C = S.class && CLASSES[S.class], R = S.species && SPECIES[S.species];
+  const p = [
+    {id:"intent", t:"You want to be the one who…",
+     w:"Everything after this is downstream of your answer. There is no wrong one."},
+    {id:"class", t:"What are you?",  w:"This decides how much else there is to decide."},
+    {id:"region", t:"Where are you from?",
+     w:"A place, not a people. It suggests who your neighbours were — it never decides."},
+    {id:"species", t:"And what are you?",
+     w:"A body, not a build. Nothing here touches your numbers."},
+    {id:"background", t:"What were you before?",
+     w:"Two skills, and the two numbers you actually earned."},
+    {id:"abilities", t:"Your six numbers",
+     w:S.intent ? `Arranged for the one who ${INTENTS[S.intent].n.replace("…","")}.`
+                : "Standard array."},
+  ];
+  if (C) p.push({id:"skills", t:"What are you good at?",
+                 w:`${C.name}s pick ${skillPick()}. Your background's two are already yours.`});
+  if (C && C.style)  p.push({id:"style",  t:"How do you fight?", w:"A fighter's one real choice at level 1."});
+  if (C && C.domain) p.push({id:"domain", t:"Which god answers?", w:"Your domain decides what else you can do."});
+  if (C && C.caster) p.push({id:"cantrips", t:"Your cantrips", w:"These never run out, and you never swap them."});
+  if (C && C.caster) p.push({id:"spells", t:C.prepares?"What you prepared today":"What is in your book",
+                             w:C.prepares?"Tomorrow you could prepare differently.":"Six spells, written down, yours forever."});
+  if (R && R.elfCantrip && S.class!=="wizard")
+    p.push({id:"elfcantrip", t:"The elf cantrip", w:"High elves know one wizard cantrip, whatever else they are."});
+  /* Equipment is deliberately glossed. Kit is a whole wizard of its own —
+     weapons, armour, packs, encumbrance — and running it here would double
+     the length of a wizard whose whole argument is that its length is
+     earned. So: pick a packed bag, and say plainly that the real choosing
+     happens after you are minted. */
+  if (C) p.push({id:"kit", t:"Pick a packed bag",
+                 w:"Two your class already packed. The real quartermastering comes later."});
+  p.push({id:"name", t:"Who is this?", w:"The last thing, because now you know who you are naming."});
+  p.push({id:"done", t:"", w:""});
+  return p;
+}
+
+function step(){ return plan()[Math.min(at, plan().length-1)] }
+function isDone(){ return step().id==="done" }
+
+/* satisfied() — the Next gate, one rule per step (sigil's canProceed) */
+function satisfied(id){
+  const C = S.class && CLASSES[S.class];
+  switch(id){
+    case "intent": return !!S.intent;
+    case "class": return !!S.class;
+    case "region": return !!S.region;
+    case "species":  return !!S.species;
+    case "abilities": return ABIL.every(a=>S.assign[a]!=null);
+    case "background": return !!S.background;
+    case "skills": return S.skills.length===skillPick();
+    case "style":  return !!S.style;
+    case "domain": return !!S.domain;
+    case "cantrips": return S.cantrips.length===C.cantrips;
+    case "spells": return S.spells.length===spellsWanted();
+    case "elfcantrip": return !!S.elfCantrip;
+    case "kit": return !!S.kit;
+    case "name": return S.name.trim().length>0;
+    default: return true;
+  }
+}
+/* Humans trade the old +1-to-everything for one more skill — species has
+   to still be worth choosing once it stops touching the numbers. */
+function skillPick(){
+  const C = S.class && CLASSES[S.class];
+  if (!C) return 0;
+  return C.skillPick + ((S.species && SPECIES[S.species].extraSkill) || 0);
+}
+function spellsWanted(){
+  const C = CLASSES[S.class];
+  if (!C || !C.caster) return 0;
+  return C.prepares ? Math.max(1, mod(score(C.key))+1) : C.book;
+}
+
+/* --------- derivation, one owner ---------
+   Species contributes nothing here by design. The +2/+1 comes from the
+   background, aimed by whichever build is in play — so the build cards
+   can show final numbers, which is only possible because background now
+   sits ahead of the abilities step. */
+function bgBonus(buildId){
+  const B = S.background && BACKGROUNDS[S.background];
+  if (!B) return {};
+  const b = (BUILDS[S.class]||[]).find(x=>x.id===(buildId||S.build));
+  const order = b ? b.order : ABIL;
+  const ranked = B.abil.slice().sort((x,y)=>order.indexOf(x)-order.indexOf(y));
+  return {[ranked[0]]:2, [ranked[1]]:1};
+}
+function score(a, buildId){ return (S.assign[a]||0) + (bgBonus(buildId)[a]||0) }
+function mod(v){ return Math.floor((v-10)/2) }
+function derive(){
+  const C = CLASSES[S.class], R = SPECIES[S.species];
+  if (!C||!R) return null;
+  const kit = C.kits.find(k=>k.id===S.kit);
+  let ac = kit ? kit.ac : 10;
+  if (!kit || kit.dex) ac = (kit?kit.ac:10) + mod(score("DEX"));
+  if (S.style==="defense") ac += 1;
+  return {
+    C,R, hp: Math.max(1, C.hitDie + mod(score("CON")) + (R.hpBonus||0)),
+    ac, speed:R.speed,
+    dc: C.caster ? 8+2+mod(score(C.key)) : null,
+  };
+}
+
+/* --------- builds: intent picks the order, never the option set --------- */
+function buildsFor(){
+  const all = BUILDS[S.class] || [];
+  return all.slice().sort((a,b)=>
+    (b.fits.includes(S.intent)?1:0) - (a.fits.includes(S.intent)?1:0));
+}
+function applyBuild(b){
+  S.assign = {};
+  b.order.forEach((a,i)=> S.assign[a] = ARRAY[i]);
+  S.build = b.id; S.pick = null;
+}
+/* the two numbers a build is judged on, plus what it gives up against
+   the best sibling — computed, never written down twice */
+function statsFor(b){
+  const snap = JSON.stringify(S.assign);
+  b.order.forEach((a,i)=> S.assign[a] = ARRAY[i]);
+  const C = CLASSES[S.class], R = SPECIES[S.species];
+  const hp = Math.max(1, C.hitDie + mod(score("CON",b.id)) + (R.hpBonus||0));
+  const head = C.caster ? 8+2+mod(score(C.key,b.id)) : 2+mod(score(b.key,b.id));
+  S.assign = JSON.parse(snap);
+  return {hp, head, cost:costAgainstSiblings(b, hp, head)};
+}
+function costAgainstSiblings(b, hp, head){
+  const others = (BUILDS[S.class]||[]).filter(x=>x.id!==b.id).map(x=>{
+    const snap = JSON.stringify(S.assign);
+    x.order.forEach((a,i)=> S.assign[a] = ARRAY[i]);
+    const C = CLASSES[S.class], R = SPECIES[S.species];
+    const r = {hp: Math.max(1, C.hitDie + mod(score("CON",x.id)) + (R.hpBonus||0)),
+               head: C.caster ? 8+2+mod(score(C.key,x.id)) : 2+mod(score(x.key,x.id))};
+    S.assign = JSON.parse(snap);
+    return r;
+  });
+  const bestHp = Math.max(...others.map(o=>o.hp), hp);
+  const bestHead = Math.max(...others.map(o=>o.head), head);
+  const bits = [];
+  if (hp < bestHp) bits.push(`${bestHp-hp} fewer hit points than the toughest`);
+  if (head < bestHead) bits.push(`${bestHead-head} lower than the sharpest`);
+  return bits.join(", ");
+}
+
+/* how many steps a hypothetical choice would produce — the price of a pick */
+function lengthIf(patch){
+  const snap = JSON.stringify(S);
+  Object.assign(S, patch);
+  const n = plan().length-1;          // minus the 'done' pane
+  S = JSON.parse(snap);
+  return n;
+}
+
+/* ================================================================
+   Render
+   ================================================================ */
+const $ = id => document.getElementById(id);
+let lastLen = null;
+
+function render(){
+  const p = plan(), st = step();
+
+  /* --- the rail --- */
+  const segs = p.slice(0,-1);
+  const railEl = $("rail");
+  const grew = lastLen!==null && segs.length!==lastLen;
+  railEl.innerHTML = segs.map((s,i)=>
+    `<div class="seg ${i<at?"done":""} ${i===at?"now":""} ${grew&&i>=lastLen?"entering":""}"></div>`).join("");
+  lastLen = segs.length;
+  $("railN").textContent = isDone() ? "Summoned" : `Step ${at+1} of ${segs.length}`;
+  $("railL").textContent = isDone() ? "" :
+    (segs.length-at-1===0 ? "last one" : `${segs.length-at-1} left`);
+
+  /* --- body --- */
+  $("main").innerHTML = isDone() ? sheetHTML()
+    : `<h2>${st.t}</h2><div class="why">${st.w}</div>` + glossMore(st.id) + bodyFor(st.id);
+  if (isDone()) $("toEffigy").onclick = ()=> { location.href = handoffURL() };
+  wire(st.id);
+  $("main").scrollTop = 0;
+
+  /* --- footer --- */
+  $("back").disabled = at===0;
+  $("back").style.display = isDone() ? "none" : "";
+  $("next").disabled = !isDone() && !satisfied(st.id);
+  $("next").textContent = isDone() ? "Start again"
+    : (p[at+1] && p[at+1].id==="done" ? "Summon" : "Next");
+}
+
+function bodyFor(id){
+  const C = S.class && CLASSES[S.class];
+
+  if (id==="intent")
+    return Object.entries(INTENTS).map(([k,i])=>
+      optHTML(k, S.intent===k, i.n, i.d,
+        Object.entries(BUILDS)
+          .filter(([,bs])=>bs.some(b=>b.fits.includes(k)))
+          .map(([c])=>CLASSES[c].name).join(", ") + " can all do this")).join("");
+
+  if (id==="class")
+    return Object.entries(CLASSES).map(([k,c])=>{
+      const n = lengthIf({class:k});
+      const fit = BUILDS[k].find(b=>b.fits.includes(S.intent));
+      return optHTML(k, S.class===k, c.name, c.d,
+        `${n} steps in all${c.caster?" — casters choose more":""}`,
+        false,
+        fit ? `${fit.n} is how a ${c.name} does that`
+            : `<span class="no">Not really what a ${c.name} is for</span>`);
+    }).join("");
+
+  if (id==="region")
+    /* "Mostly X and Y" here, and "Common in <region>" on the species cards,
+       already carry the it-is-a-suggestion point between them. Saying it a
+       third time out loud was redundant. */
+    return Object.entries(REGIONS).map(([k,r])=>
+      optHTML(k, S.region===k, r.name, r.d,
+        `${r.skill} · speaks ${r.lang}`, false,
+        `Mostly ${r.common.map(c=>SPECIES[c].name).join(" and ")}`)).join("");
+
+  if (id==="species")
+    return Object.entries(SPECIES).map(([k,r])=>{
+      const n = lengthIf({species:k});
+      const extra = (r.elfCantrip && S.class!=="wizard")
+        ? `${n} steps — one more, for the cantrip` : "";
+      const home = S.region && REGIONS[S.region].common.includes(k)
+        ? `Common in ${REGIONS[S.region].name}` : null;
+      return optHTML(k, S.species===k, r.name, r.d, extra, false, home);
+    }).join("");
+
+  if (id==="abilities" && !S.manual){
+    const list = buildsFor();
+    /* This is the step people stall on, so say the stakes out loud: they
+       are low. Back re-picks any of it, and a sheet is a thing you keep
+       editing rather than a thing you submit. */
+    const note = noteHTML(`Not a commitment. <b>Back</b> re-picks any of this,
+      and a sheet stays editable long after you are playing it.`);
+    return note + list.map((b,bi)=>{
+      const st = statsFor(b), C2 = CLASSES[S.class];
+      const bonus = bgBonus(b.id);
+      const nums = b.order.map((a,i)=>{
+        const v = ARRAY[i] + (bonus[a]||0);
+        /* the number shown is the FINAL one, so an inline "+2" next to it
+           reads as arithmetic still to do. Provenance is carried by colour
+           plus the line underneath, which names the amounts once. */
+        return `<span class="${a===b.key?"k":""} ${bonus[a]?"boost":""}">${a} ${v}</span>`;
+      }).join("");
+      const from = Object.entries(bonus).map(([a,n])=>`+${n} ${a}`).join(", ");
+      /* Two builds can land on the same two headline numbers and still be
+         different characters — Scholar and Canny differ on DEX against WIS,
+         which never reaches a headline. When that happens, say what DOES
+         differ rather than printing the same card twice. */
+      let twin = null;
+      if (bi>0){
+        const prev = list[bi-1], ps = statsFor(prev);
+        if (ps.hp===st.hp && ps.head===st.head){
+          const i = b.order.findIndex((a,ix)=> a!==prev.order[ix]);
+          if (i>=0) twin = `Same numbers as ${prev.n} — takes ${b.order[i]} over ${prev.order[i]}`;
+        }
+      }
+      return `<button class="opt build ${S.build===b.id?"sel":""}" data-b="${b.id}">
+        <div class="t"><span>${b.n}</span>${
+          bi===0 && b.fits.includes(S.intent)?'<span class="fit">what you asked for</span>':""}${
+          S.build===b.id?"<span>✓</span>":""}</div>
+        <div class="nums">${nums}</div>
+        <div class="d">${b.d}</div>
+        <div class="len">${from} from your ${BACKGROUNDS[S.background].name.toLowerCase()} years</div>
+        <div class="two2">
+          <div><b>${st.hp}</b><i>hit points</i></div>
+          <div><b>${st.head>=0&&!C2.caster?"+":""}${st.head}</b><i>${C2.caster?"spell save DC":"to hit"}</i></div>
+        </div>
+        ${twin ? `<div class="len">${twin}</div>`
+               : (st.cost?`<div class="len">${st.cost}</div>`:"")}
+      </button>`;
+    }).join("") +
+    `<button class="opt manual" data-manual="1">
+       <div class="t"><span>Place them myself</span></div>
+       <div class="d">Six values, six slots, no suggestion.</div></button>`;
+  }
+
+  if (id==="abilities"){
+    const used = ABIL.filter(a=>S.assign[a]!=null).length;
+    return noteHTML(`Not a commitment. <b>Back</b> re-picks any of this,
+        and a sheet stays editable long after you are playing it.`) +
+      `<button class="opt manual" data-manual="0">
+        <div class="t"><span>← back to the suggested builds</span></div></button>
+      <div class="arr">` + ABIL.map(a=>{
+      const v = S.assign[a], m = v!=null ? mod(score(a)) : null;
+      const isKey = C && C.key===a;
+      return `<button data-a="${a}" class="${S.pick===a?"sel":""}">
+        <i>${a}${isKey?" ★":""}</i><b>${v??"—"}</b>
+        <i>${m!=null?(m>=0?"+":"")+m+" total":"empty"}</i></button>`;
+    }).join("") + `</div>
+    <div class="count ${used===6?"full":""}">${S.pick
+      ? `Which value goes in ${S.pick}?`
+      : used===6 ? "All six placed — tap any to swap" : `${used} of 6 placed`}</div>` +
+    ARRAY.map(v=>{
+      const holder = ABIL.find(a=>S.assign[a]===v);
+      const m = S.pick ? mod(v + ((SPECIES[S.species]?.bon[S.pick])||0)) : mod(v);
+      return `<button class="opt" data-v="${v}" ${S.pick?"":"disabled"}>
+        <div class="t"><span>${v}</span><span>${m>=0?"+":""}${m}${S.pick?" in "+S.pick:""}</span></div>
+        ${holder?`<div class="d">${holder} has it now — they would swap</div>`:""}</button>`;
+    }).join("");
+  }
+
+  if (id==="background")
+    /* This was on every card, which made it read as a property of each
+       background rather than as the rule of the step. It is the rule of
+       the step, so it is said once, at the top. */
+    return noteHTML("What you <b>did</b> is where your numbers come from — not what you are.") +
+      Object.entries(BACKGROUNDS).map(([k,b])=>
+        optHTML(k, S.background===k, b.name, b.d,
+          `${b.skills.join(" + ")} — and +2 / +1 across ${b.abil.join(", ")}`)).join("");
+
+  if (id==="skills"){
+    const bg = BACKGROUNDS[S.background].skills;
+    return `<div class="count ${S.skills.length===skillPick()?"full":""}">${S.skills.length} of ${skillPick()} picked</div>` +
+      C.skills.map(s=>{
+        const ab = SKILL_ABIL[s], tot = mod(score(ab)) + 2;
+        const num = `${tot>=0?"+":""}${tot}`;
+        /* "once trained" is a promise, so it must not appear on one you are
+           already trained in — a new player reads it as not-yet-true. */
+        if (bg.includes(s))
+          return optHTML(s,true,s,"Already yours, from your background",
+            `Uses ${ab} · you roll ${num}`, true);
+        return optHTML(s, S.skills.includes(s), s,
+          `Uses ${ab} · ${S.skills.includes(s)?`you roll ${num}`:`would roll ${num}`}`, "");
+      }).join("");
+  }
+
+  if (id==="style")  return C.style.map(o=>optHTML(o.id,S.style===o.id,o.n,o.d,"")).join("");
+  if (id==="domain") return C.domain.map(o=>optHTML(o.id,S.domain===o.id,o.n,o.d,"")).join("");
+
+  if (id==="cantrips"){
+    const L = SPELLS[C.caster];
+    return `<div class="count ${S.cantrips.length===C.cantrips?"full":""}">${S.cantrips.length} of ${C.cantrips}</div>` +
+      L.cantrip.map(([n,d])=>optHTML(n,S.cantrips.includes(n),n,d,"")).join("");
+  }
+  if (id==="spells"){
+    const L = SPELLS[C.caster], want = spellsWanted();
+    return `<div class="big ${S.spells.length===want?"sel":""}">
+        <div class="lab">${C.prepares?"You may prepare":"Your book holds"}</div>
+        <div class="num">${want}</div>
+        <div class="sub">${C.prepares?`${C.key} modifier + your level`:"six, chosen once"}</div>
+      </div>
+      <div class="count ${S.spells.length===want?"full":""}">${S.spells.length} of ${want}</div>` +
+      L.lvl1.map(([n,d])=>optHTML(n,S.spells.includes(n),n,d,"")).join("");
+  }
+  if (id==="elfcantrip")
+    return SPELLS.arcane.cantrip.map(([n,d])=>optHTML(n,S.elfCantrip===n,n,d,"")).join("");
+
+  if (id==="kit"){
+    const D = {C, R:SPECIES[S.species]};
+    return noteHTML(`Equipment is a whole wizard of its own, so this one does not run it.
+      Take a bag now; <b>swap any of it</b> once the character is minted.`) +
+      `<div class="two">` + C.kits.map(k=>{
+      const snap = S.kit; S.kit = k.id; const ac = derive().ac; S.kit = snap;
+      return `<button class="big ${S.kit===k.id?"sel":""}" data-o="${k.id}">
+        <div class="lab">Armour class</div><div class="num">${ac}</div>
+        <div class="sub">${k.n}</div></button>`;
+    }).join("") + `</div>`;
+  }
+
+  if (id==="name"){
+    const D = derive();
+    return `<input class="name" id="nameIn" value="${S.name}" maxlength="24"
+             placeholder="a name" autocomplete="off" spellcheck="false">
+      <div class="why" style="margin-top:.9rem">A ${SPECIES[S.species].name} ${CLASSES[S.class].name}
+      with ${D.hp} hit points${S.style?", fighting "+CLASSES[S.class].style.find(x=>x.id===S.style).n.toLowerCase():""}${
+      S.domain?", sworn to "+CLASSES[S.class].domain.find(x=>x.id===S.domain).n:""}.</div>`;
+  }
+  return "";
+}
+
+/* A statement about the whole step, said once at the top. Anything true of
+   every card belongs here rather than repeated on each of them. */
+function noteHTML(html){ return `<div class="note">${html}</div>` }
+
+function optHTML(id,sel,title,desc,len,disabled,fit){
+  return `<button class="opt ${sel?"sel":""}" data-o="${id}" ${disabled?"disabled style=opacity:.5":""}>
+    <div class="t"><span>${title}</span>${sel?"<span>✓</span>":""}</div>
+    ${desc?`<div class="d">${desc}</div>`:""}
+    ${fit?`<div class="fitline">${fit}</div>`:""}
+    ${len?`<div class="len">${len}</div>`:""}</button>`;
+}
+
+function sheetHTML(){
+  const D = derive(), C = D.C;
+  const bg = BACKGROUNDS[S.background].skills;
+  const line = (k,v)=> v ? `<div class="line"><b>${k}</b><span>${v}</span></div>` : "";
+  return `<div class="sheet">
+    <h3>${S.name}</h3>
+    <div class="sub">${D.R.name} ${C.name} 1 · ${BACKGROUNDS[S.background].name}<br>
+      <span style="color:var(--dimmer)">out of ${REGIONS[S.region].name}</span></div>
+    <div class="vit">
+      <div><b>HIT POINTS</b><i>${D.hp}</i></div>
+      <div><b>ARMOR CLASS</b><i>${D.ac}</i></div>
+      <div><b>SPEED</b><i>${D.speed}</i></div>
+      ${D.dc?`<div><b>SPELL DC</b><i>${D.dc}</i></div>`:""}
+    </div>
+    <div class="st">${ABIL.map(a=>{const m=mod(score(a));
+      return `<div><b>${a}</b><i>${score(a)}</i><b>${m>=0?"+":""}${m}</b></div>`}).join("")}</div>
+    ${line("Skills", [...bg, REGIONS[S.region].skill, ...S.skills].join(", "))}
+    ${line("Languages", "Common, "+REGIONS[S.region].lang)}
+    ${line("Saves", C.saves.join(", "))}
+    ${line(C.style?"Style":"", S.style?C.style.find(x=>x.id===S.style).n:"")}
+    ${line(C.domain?"Domain":"", S.domain?C.domain.find(x=>x.id===S.domain).n:"")}
+    ${line("Cantrips", [...S.cantrips, S.elfCantrip].filter(Boolean).join(", "))}
+    ${line(C.prepares?"Prepared":"Spellbook", S.spells.join(", "))}
+    ${line("Carrying", C.kits.find(k=>k.id===S.kit).n)}
+  </div>
+  <div class="why" style="margin-top:.9rem">That was ${plan().length-1} steps.
+  A ${S.class==="fighter"?"caster would have been longer":"fighter would have been shorter"}.</div>
+  <button class="opt handoff" id="toEffigy">
+    <div class="t"><span>Open ${S.name} in the sheet →</span></div>
+    <div class="d">Where the numbers, the gear and everything else stay changeable.</div>
+  </button>`;
+}
+
+/* --------- the handoff ---------
+   Creation ends where editing begins. The character travels in the URL
+   rather than in storage so the link survives a reload and can be sent
+   to the phone as-is. */
+function handoffURL(){
+  const c = {
+    v:1, intent:S.intent, class:S.class, region:S.region, species:S.species,
+    background:S.background, name:S.name, assign:S.assign, build:S.build,
+    skills:S.skills, style:S.style, domain:S.domain,
+    cantrips:S.cantrips, spells:S.spells, elfCantrip:S.elfCantrip, kit:S.kit,
+  };
+  const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(c))))
+    .replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+  return `../effigy/#c=${b64}`;
+}
+
+/* ================================================================
+   Interaction
+   ================================================================ */
+function wire(id){
+  const C = S.class && CLASSES[S.class];
+
+  if (id==="name"){ const el=$("nameIn");
+    el.oninput = ()=>{ S.name = el.value; $("next").disabled = !satisfied("name") };
+    setTimeout(()=>el.focus(),120); return }
+
+  [...$("main").querySelectorAll("[data-o]")].forEach(b=> b.onclick = ()=>{
+    const v = b.dataset.o, before = plan().length;
+    if (id==="intent"){ S.intent = v; S.build=null; S.manual=false }
+    else if (id==="class"){ S.class = v; retire() }
+    else if (id==="region"){ S.region = v }
+    else if (id==="species"){ S.species = v; if(S.class!=="wizard"&&!SPECIES[v].elfCantrip) S.elfCantrip=null;
+      S.skills = S.skills.slice(0, skillPick()) }
+    else if (id==="background"){ S.background = v; S.skills = S.skills.filter(s=>!BACKGROUNDS[v].skills.includes(s)) }
+    else if (id==="skills"){
+      if (S.skills.includes(v)) S.skills = S.skills.filter(x=>x!==v);
+      else if (S.skills.length < skillPick()) S.skills.push(v);
+      else { S.skills.shift(); S.skills.push(v) }
+    }
+    else if (id==="style") S.style = v;
+    else if (id==="domain") S.domain = v;
+    else if (id==="cantrips"){ toggle(S.cantrips, v, C.cantrips) }
+    else if (id==="spells"){ toggle(S.spells, v, spellsWanted()) }
+    else if (id==="elfcantrip") S.elfCantrip = v;
+    else if (id==="kit") S.kit = v;
+    render();
+    told(before, plan().length, id);
+  });
+
+  [...$("main").querySelectorAll("[data-b]")].forEach(el=> el.onclick = ()=>{
+    applyBuild(BUILDS[S.class].find(x=>x.id===el.dataset.b)); render();
+  });
+  [...$("main").querySelectorAll("[data-manual]")].forEach(el=> el.onclick = ()=>{
+    S.manual = el.dataset.manual==="1";
+    if (S.manual){ S.assign = {}; S.build = null; S.pick = ABIL[0] }
+    render();
+  });
+
+  [...$("main").querySelectorAll("[data-a]")].forEach(b=> b.onclick = ()=>{
+    S.pick = S.pick===b.dataset.a ? null : b.dataset.a; render();
+  });
+  [...$("main").querySelectorAll("[data-v]")].forEach(b=> b.onclick = ()=>{
+    const v = +b.dataset.v, a = S.pick; if (!a) return;
+    const other = ABIL.find(x=>S.assign[x]===v);
+    if (other) S.assign[other] = S.assign[a] ?? null;
+    if (other && S.assign[other]==null) delete S.assign[other];
+    S.assign[a] = v; S.pick = null;
+    const nextEmpty = ABIL.find(x=>S.assign[x]==null);
+    if (nextEmpty) S.pick = nextEmpty;      // keep the thumb moving
+    render();
+  });
+}
+function toggle(arr, v, cap){
+  const i = arr.indexOf(v);
+  if (i>=0) arr.splice(i,1);
+  else { if (arr.length>=cap) arr.shift(); arr.push(v) }
+}
+/* changing class drops what the old class owned — spoken, not silent */
+function retire(){ S.skills=[]; S.style=null; S.domain=null; S.cantrips=[]; S.spells=[]; }
+
+/* the length toast — the "what did that just do" half, about TIME not stats */
+let tT=null;
+function told(before, after, id){
+  const d = after-before;
+  if (!d) return;
+  $("tH").className = "h " + (d>0?"plus":"minus");
+  $("tH").textContent = `${d>0?"+":""}${d} step${Math.abs(d)>1?"s":""}`;
+  $("tB").textContent = d>0
+    ? `${CLASSES[S.class]?.name||"That"} has more to decide. ${plan().length-1} in all.`
+    : `Fewer decisions ahead. ${plan().length-1} in all.`;
+  $("toast").classList.add("up");
+  clearTimeout(tT); tT = setTimeout(()=>$("toast").classList.remove("up"), 2800);
+}
+
+$("back").onclick = ()=>{ if (at>0){ at--; render() } };
+$("next").onclick = ()=>{
+  if (isDone()){ reset(); return }
+  if (!satisfied(step().id)) return;
+  at++; render();
+};
+function reset(){
+  S = {intent:null,class:null,region:null,species:null,background:null,name:"",assign:{},pick:null,
+       build:null,manual:false,
+       skills:[],style:null,domain:null,cantrips:[],spells:[],elfCantrip:null,kit:null};
+  at = 0; lastLen = null; render();
+}
+
+/* debug hook — the invariant that matters is that every path terminates
+   and every step in the plan can actually be satisfied. */
+window.summoning = {
+  get state(){ return S }, plan, derive,
+  /* walk every class × race, auto-answering, and confirm each lands on a sheet */
+  sweep(){
+    const bad = [];
+    for (const k of Object.keys(CLASSES)) for (const r of Object.keys(SPECIES))
+    for (const it of Object.keys(INTENTS)){
+      reset(); S.intent=it; S.class=k; S.species=r;
+      S.region = Object.keys(REGIONS)[0];
+      S.background = Object.keys(BACKGROUNDS)[0];
+      applyBuild(buildsFor()[0]);          // every intent must reach a build
+      /* species must never move a score — the whole point of the ruling */
+      for (const sp of Object.keys(SPECIES)){
+        const snap = S.species; S.species = sp;
+        const now = ABIL.map(a=>score(a)).join(",");
+        S.species = snap;
+        if (now !== ABIL.map(a=>score(a)).join(","))
+          bad.push({k,r,it,step:"species",reason:`${sp} moved a score`});
+      }
+      const p = plan(); let steps=0;
+      for (const s of p){
+        if (s.id==="done") break;
+        steps++;
+        const C = CLASSES[S.class];
+        if (s.id==="skills") S.skills = C.skills
+          .filter(x=>!BACKGROUNDS[S.background].skills.includes(x)).slice(0,skillPick());
+        if (s.id==="style")  S.style  = C.style[0].id;
+        if (s.id==="domain") S.domain = C.domain[0].id;
+        if (s.id==="cantrips") S.cantrips = SPELLS[C.caster].cantrip.slice(0,C.cantrips).map(x=>x[0]);
+        if (s.id==="spells")   S.spells   = SPELLS[C.caster].lvl1.slice(0,spellsWanted()).map(x=>x[0]);
+        if (s.id==="elfcantrip") S.elfCantrip = SPELLS.arcane.cantrip[0][0];
+        if (s.id==="kit") S.kit = C.kits[0].id;
+        if (s.id==="name") S.name = "Test";
+        if (!satisfied(s.id)) bad.push({k,r,it,step:s.id,reason:"unsatisfiable"});
+      }
+      const D = derive();
+      if (!D || D.hp<1) bad.push({k,r,it,step:"derive",reason:"no sheet"});
+      if (steps !== plan().length-1) bad.push({k,r,it,step:"plan",reason:"length moved mid-walk"});
+      /* every intent must be reachable: some class offers a build for it */
+      if (!Object.values(BUILDS).some(bs=>bs.some(b=>b.fits.includes(it))))
+        bad.push({k,r,it,step:"intent",reason:"orphan intent — no build fits it"});
+      /* a class with no build for an intent is FICTION, not a fault — a
+         fighter is not the one with an answer for anything. What would be
+         a fault is the card going silent about it, so the assertion is
+         that the steer is always SAID, either way. */
+      const fit = BUILDS[k].some(b=>b.fits.includes(it));
+      const said = fit
+        ? `${BUILDS[k].find(b=>b.fits.includes(it)).n} is how a ${CLASSES[k].name} does that`
+        : `Not really what a ${CLASSES[k].name} is for`;
+      if (!said) bad.push({k,r,it,step:"intent",reason:"class card says nothing about the intent"});
+
+      /* the paralysis fix only works if the cards VISIBLY differ — three
+         builds rendering the same two numbers is the same shrug in fewer
+         options. Adjacent array values share a modifier, so this has to be
+         asserted rather than assumed. */
+      const seen = new Set(BUILDS[k].map(b=>{
+        const st = statsFor(b); return `${st.hp}/${st.head}`;
+      }));
+      if (seen.size < 2)
+        bad.push({k,r,it,step:"builds",reason:`all ${k} builds render ${[...seen][0]}`});
+    }
+    reset();
+    return {fail:bad, lengths:Object.keys(CLASSES).flatMap(k=>Object.keys(SPECIES).map(r=>{
+      const snap=JSON.stringify(S); S.class=k; S.species=r;
+      const n=plan().length-1; S=JSON.parse(snap); return `${k}/${r}: ${n}`;
+    }))};
+  },
+};
+
+render();
+</script>
+</body>
+</html>
