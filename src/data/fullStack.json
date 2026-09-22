@@ -2,14 +2,14 @@
   "name": "Travis Tincher",
   "position": "Senior Software Engineer — Ruby on Rails · full stack · AI agents",
   "tagline": "Rails backends, React frontends, and the AI agents that now help build both.",
-  "summary": "Full-stack engineer with over six years of experience building and maintaining Ruby on Rails servers and React TypeScript clients, with PostgreSQL behind most of it. Shipped 3rd party and LLM integrations into regulated workflows in mortgage, estate settlement, and healthcare. Spent the past year building and operating an agent-driven development system with human review gates, which is where most of my understanding of how to verify AI output comes from.",
+  "summary": "Full-stack engineer with over six years of experience building and maintaining Ruby on Rails servers and React TypeScript clients, with PostgreSQL behind most of it. Shipped 3rd party and LLM integrations into regulated workflows in mortgage, estate settlement, and healthcare. Spent the past year building and operating an orchestrator-worker agent harness with human-in-the-loop review gates, which is where most of my understanding of context engineering and agent verification comes from.",
   "selectedWork": {
     "title": "Autonomous agent dev system",
     "period": "2025 – present",
     "bullets": [
-      "Built and operate a two-mode agent system for shipping software. In live mode an orchestrator session plans the work, briefs parallel worker agents in isolated git worktrees, chooses the model for each task, and lands the results as a stacked set of pull requests with one human review gate. In background mode a queue-driven runner executes one headless LLM session per task from a pinned checkout for overnight and batch work.",
+      "Built and operate a two-mode agent harness for shipping software. In live mode an orchestrator session plans the work, briefs parallel worker agents in isolated git worktrees, routes each task to the model tier it needs, and lands the results as a stacked set of pull requests with one human-in-the-loop review gate. In background mode a queue-driven runner executes one headless LLM session per task from a pinned checkout, so overnight and batch work runs as background agents.",
       "Over twelve months of continuous operation it has run about 3,500 tasks and merged 640+ pull requests across multiple repos, most of them fully autonomously with human review at strategic gates, and a multiplayer game beta shipped through it.",
-      "Quality comes from checks the system runs on itself. I cut the test suites to a small budget per module after coverage chasing began eating a large portion of each agent run's capacity, and moved that weight onto verification per task. Every task carries its own verify criteria that have to pass before its commit lands, and UI work is confirmed visually by an agent in a headed browser before I look. That shift has raised the quality of what reaches me more than anything else."
+      "Quality comes from checks the system runs on itself. I cut the test suites to a small budget per module after coverage chasing began eating a large portion of each agent run's capacity, and moved that weight onto a verification loop per task. Every task carries its own verify criteria that have to pass before its commit lands, agents are briefed to push back on a plan rather than agree with it, a second agent reviews changes adversarially before I do, and UI work is confirmed visually by an agent in a headed browser before I look. That shift has raised the quality of what reaches me more than anything else."
     ]
   },
   "email": "tincher.travis@gmail.com",
@@ -144,10 +144,16 @@
       "Design systems"
     ],
     "AI agents": [
+      "Orchestrator-worker architecture",
+      "Harness engineering",
+      "Context engineering",
+      "Model routing (frontier and smaller models)",
+      "Background (headless) coding agents",
+      "Verification loops and adversarial review",
+      "Human-in-the-loop gates",
+      "Claude Code, MCP tool integrations",
       "LLM document pipelines (OpenAI, Claude)",
-      "Prompt engineering",
-      "Agent orchestration",
-      "Agent testing and evaluation"
+      "Evals"
     ],
     "DevOps": [
       "AWS (ECS, RDS, S3, SQS, Textract)",
