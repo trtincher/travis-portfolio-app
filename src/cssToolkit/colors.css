@@ -1,10 +1,42 @@
+/* Earthy palette — values carried over from src/config/colors.scss
+   and the previous src/cssToolkit/colors.css, exposed as custom properties. */
 :root {
-  --primary-color: #606c38;
-  --secondary-color: #dda15e;
-  --accent-color: #bc6c25;
-  --background-color: #fefae0;
-  --text-color-light: #fefae0;
-  --text-color-dark: #283618;
-  --button-color: #bc6c25;
-  --border-color: #bc6c25;
+  /* Core earthy set (previous cssToolkit values) */
+  --olive: #606c38;
+  --olive-ink: #283618;
+  --cream: #fefae0;
+  --sand: #dda15e;
+  --clay: #bc6c25;
+
+  /* From src/config/colors.scss */
+  --burnt-orange: #ce5207;
+  --burnt-orange-soft: #da7d45;
+  --sand-light: #eed3b5;
+  --app-white: #fffefc;
+  --app-black: #141414;
+  --danger: #d80000;
+
+  /* Derived tones (AA-checked against cream / olive) */
+  --olive-muted: #5a6647;
+  --clay-strong: #a75a1c;
+  --rule: #ded8b4;
+  --rule-strong: #c9c293;
+
+  /* Semantic aliases — names kept from the old toolkit so nothing breaks */
+  --primary-color: var(--olive);
+  --secondary-color: var(--sand);
+  --accent-color: var(--clay);
+  --background-color: var(--cream);
+  --text-color-light: var(--cream);
+  --text-color-dark: var(--olive-ink);
+  --button-color: var(--clay);
+  --border-color: var(--clay);
+
+  /* Role tokens used by the redesign */
+  --surface: var(--cream);
+  --surface-band: var(--olive);
+  --text: var(--olive-ink);
+  --text-meta: var(--olive-muted);
+  --text-on-band: var(--cream);
+  --link: var(--clay-strong);
 }

@@ -2,7 +2,7 @@
 import React from 'react';
 import { ResumeData } from '../../types/types';
 import rawTestFormData from '../../data/fullStack.json';
-import './Home.css'; 
+import './Resume.css';
 
 const data: ResumeData = rawTestFormData;
 

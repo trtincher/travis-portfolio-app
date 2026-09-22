@@ -6,8 +6,8 @@ import './Home.css';
 // Import Data
 import resumeData from '../../data/fullStack.json';
 
-// Import Types
-import { Skills } from "../../types/types";
+// Import Components
+import PortDeck from "../../components/PortDeck/PortDeck";
 
 // Import Images
 import profileImage from '../../assets/Travis-Headshot.jpg';
@@ -19,94 +19,143 @@ import Download from '../../assets/download.svg';
 
 // Import PDF
 import resumePDF from '../../assets/Travis-Resume.pdf';
-// import PortDeck from "../../commonents/PortDeck/PortDeck";
 
+const skillGroups = Object.entries(resumeData.skills) as [string, string[]][];
 
 const Home: React.FC = () => {
   return (
-    <div className="home-container">
-        <div className="banner-block">
-          <div className="banner-text">
-            <h1 className="banner-title">Hello I am</h1>
-            <h1 className="banner-name">{resumeData.name}</h1>
-          </div>
-          <div className="banner-image-container">
-            <img src={profileImage} alt="Profile" className="banner-image" />
-          </div>
-          <div className="banner-shape"></div>
-        </div>
-
-        <div className="summary-block">
-          <div className="about-me">
-            <h2 className="about-me-title">{resumeData.position}</h2>
-            <p className="about-me-job-title">
-              {resumeData.tagline}
-            </p>
-            <div className="contact-block">
-              <a href={resumePDF} target="_blank" className="contact-button">
-                <img src={Download} alt="Download" className="contact-icon"/>
-                <p className="cv-button-text">Resume</p>
+    <div className="home">
+      <header className="hero">
+        <div className="wrap hero-inner">
+          <img
+            src={profileImage}
+            alt={`${resumeData.name}, headshot`}
+            className="hero-photo"
+            width={320}
+            height={320}
+          />
+          <div className="hero-copy">
+            <h1 className="hero-name">{resumeData.name}</h1>
+            <p className="hero-position">{resumeData.position}</p>
+            <p className="hero-tagline">{resumeData.tagline}</p>
+            <div className="hero-actions">
+              <a
+                href={resumePDF}
+                target="_blank"
+                rel="noreferrer"
+                className="btn btn-solid-cream"
+              >
+                <img src={Download} alt="" aria-hidden="true" className="btn-icon btn-icon-dark" />
+                Resume
               </a>
-              <a href={resumeData.linkedin} target="_blank" className="contact-button">
-                <img src={LinkedInIcon} alt="LinkedIn" />
+              <a
+                href={resumeData.github}
+                target="_blank"
+                rel="noreferrer"
+                className="btn btn-outline-cream"
+              >
+                <img src={GitHubIcon} alt="" aria-hidden="true" className="btn-icon" />
+                GitHub
               </a>
-              <a href={resumeData.github} target="_blank" className="contact-button">
-                <img src={GitHubIcon} alt="GitHub" />
+              <a
+                href={resumeData.linkedin}
+                target="_blank"
+                rel="noreferrer"
+                className="btn btn-outline-cream"
+              >
+                <img src={LinkedInIcon} alt="" aria-hidden="true" className="btn-icon" />
+                LinkedIn
               </a>
             </div>
           </div>
-
-          <div className="summary">
-            <p>
-              {resumeData.summary}
-            </p>
-          </div>
         </div>
+      </header>
 
+      <main>
+        <section className="section" id="about" aria-labelledby="about-heading">
+          <div className="wrap">
+            <h2 className="section-heading" id="about-heading">About</h2>
+            <p className="about-text">{resumeData.summary}</p>
+          </div>
+        </section>
 
-        <div className="info-block">
-          <div className="skills-block">
-            <h2 className="skills-title">Skills</h2>
-            <div className="skills-category-list">
-              {Object.keys(resumeData.skills as Skills).map((category, index) => (
-                <div key={index} className="skill-category">
-                  <h3 className="skill-category-title">{category}</h3>
-                  <ul className="skills-list">
-                    {resumeData.skills[category as keyof Skills].map((skill: string, skillIndex: number) => (
-                      <li key={skillIndex} className="skill-item">{skill}</li>
+        <section className="section" id="experience" aria-labelledby="experience-heading">
+          <div className="wrap">
+            <h2 className="section-heading" id="experience-heading">Experience</h2>
+            <ol className="exp-list">
+              {resumeData.experience.map((job, index) => (
+                <li className="exp-item" key={`${job.company}-${index}`}>
+                  <div className="exp-head">
+                    <div className="exp-id">
+                      <h3 className="exp-position">{job.position}</h3>
+                      <p className="exp-company">{job.company}</p>
+                    </div>
+                    <p className="exp-dates">
+                      {job.startDate} – {job.endDate}
+                    </p>
+                  </div>
+                  <ul className="exp-bullets">
+                    {job.summary.map((line, lineIndex) => (
+                      <li key={lineIndex}>{line}</li>
                     ))}
                   </ul>
-                </div>
+                </li>
               ))}
-            </div>
+            </ol>
           </div>
+        </section>
 
-          <div className="experience-block">
-            <h2 className="experience-title">Experience</h2>
-            <div className="experience-list">
-              {resumeData.experience.map((experience, index) => (
-                <div key={index} className="experience-item">
-                  <h3 className="item-position">{experience.position}</h3>
-                  <p className="item-company">{experience.company}</p>
-                  <p className="item-date">{experience.startDate} - {experience.endDate}</p>
-                  <ul>
-                    {experience.summary.map((summary, summaryIndex) => (
-                      <li key={summaryIndex} className="item-summary">{summary}</li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-        {/* 
-        This is not ready
-        <div className="project-block">
-          <h2 className="project-title">Projects</h2>
-          <div className="project-list">
+        <section className="section" id="projects" aria-labelledby="projects-heading">
+          <div className="wrap">
+            <h2 className="section-heading" id="projects-heading">Projects</h2>
             <PortDeck />
           </div>
-        </div> */}
+        </section>
+
+        <section className="section" id="skills" aria-labelledby="skills-heading">
+          <div className="wrap">
+            <h2 className="section-heading" id="skills-heading">Skills</h2>
+            <dl className="skill-groups">
+              {skillGroups.map(([category, items]) => (
+                <div className="skill-row" key={category}>
+                  <dt className="skill-label">{category}</dt>
+                  <dd className="skill-chips">
+                    {items.map((skill) => (
+                      <span className="chip" key={skill}>{skill}</span>
+                    ))}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </section>
+
+        <section className="section" id="education" aria-labelledby="education-heading">
+          <div className="wrap">
+            <h2 className="section-heading" id="education-heading">Education</h2>
+            <ul className="edu-list">
+              {resumeData.education.map((school, index) => (
+                <li className="edu-item" key={`${school.institution}-${index}`}>
+                  <div className="edu-id">
+                    <h3 className="edu-institution">{school.institution}</h3>
+                    <p className="edu-degree">{school.degree}</p>
+                  </div>
+                  <p className="edu-date">{school.endDate}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      </main>
+
+      <footer className="footer">
+        <div className="wrap footer-inner">
+          <a href={`mailto:${resumeData.email}`} className="footer-email">
+            {resumeData.email}
+          </a>
+          <p className="footer-legal">© 2026 Travis Tincher</p>
+        </div>
+      </footer>
     </div>
   );
 }

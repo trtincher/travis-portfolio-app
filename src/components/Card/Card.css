@@ -1,0 +1,51 @@
+.project-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  background-color: var(--app-white);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+}
+
+.project-media {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  object-position: top center;
+  background-color: var(--sand-light);
+  border-bottom: 1px solid var(--rule);
+}
+
+.project-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-4) var(--space-5);
+}
+
+.project-title {
+  font-size: var(--step-1);
+  font-weight: 700;
+}
+
+.project-stack {
+  font-size: var(--step-meta);
+  font-weight: 500;
+  color: var(--text-meta);
+  letter-spacing: 0.01em;
+}
+
+.project-desc {
+  font-size: var(--step-body);
+  line-height: var(--line-body);
+}
+
+.project-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: auto;
+  padding-top: var(--space-4);
+}

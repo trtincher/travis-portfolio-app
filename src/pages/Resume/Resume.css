@@ -1,15 +1,88 @@
+/* Print-ish resume preview page. Self-contained: it no longer borrows
+   selectors from Home.css. Tokens + .page-title/.block-title/.section-title
+   come from src/App.css. */
+@import '../../cssToolkit/colors.css';
+@import '../../cssToolkit/tokens.css';
+
 .home-grid-container {
-  background-color: #dda15e;
+  background-color: var(--sand);
   display: grid;
-  /* grid-template-columns: repeat(2, 1fr); */
-  grid-gap: 20px;
-  padding: 20px;
+  grid-gap: var(--space-5);
+  padding: var(--space-5);
 }
 
 .home-grid-item {
-  background-color: #fefae0;
-  padding: 20px;
-  border-radius: 8px;
-  color: #283618;
-  /* border: 5px solid #dda15e; */
+  background-color: var(--cream);
+  padding: var(--space-5);
+  border-radius: var(--radius-md);
+  color: var(--olive-ink);
+}
+
+.info-text,
+.summary-text {
+  font-size: var(--step-body);
+  line-height: var(--line-body);
+}
+
+.link-text {
+  color: var(--link);
+}
+
+.experience-item,
+.education-item {
+  padding-block: var(--space-4);
+  border-top: 1px solid var(--rule);
+}
+
+.experience-item:first-of-type,
+.education-item:first-of-type {
+  border-top: 0;
+}
+
+.experience-item-header,
+.education-item-date-block,
+.experience-item-date-block {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.company-name,
+.institution-name {
+  font-size: var(--step-1);
+  font-weight: 700;
+}
+
+.experience-item-date,
+.education-item-date-block p {
+  font-size: var(--step-meta);
+  color: var(--text-meta);
+}
+
+.experience-item-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.experience-item-summary-item {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.bullet-point {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  margin-top: 0.62em;
+  border-radius: 50%;
+  background-color: var(--clay);
+}
+
+.skill-list,
+.hobbies-list {
+  padding-block: var(--space-3);
 }
