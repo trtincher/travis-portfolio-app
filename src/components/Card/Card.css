@@ -25,7 +25,7 @@
   padding: var(--space-4) var(--space-4) var(--space-5);
 }
 
-/* Subtle "Playable" marker on the toy cards. */
+/* Subtle "Playable" marker on the demo cards. */
 .project-tag {
   font-size: 0.8125rem; /* 13px */
   font-weight: 600;
