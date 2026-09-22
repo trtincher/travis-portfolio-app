@@ -32,6 +32,7 @@ export interface Skills {
   Backend: string[];
   Frontend: string[];
   DevOps: string[];
+  'AI agents': string[];
 };
 
 export enum SkillType {
