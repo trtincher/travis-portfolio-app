@@ -91,6 +91,8 @@
 
 .section {
   padding-block: var(--section-y);
+  /* Keep a section's heading clear of the sticky nav bar when linked to. */
+  scroll-margin-top: var(--nav-h);
 }
 
 .section + .section {

@@ -7,6 +7,7 @@ import './Home.css';
 import resumeData from '../../data/fullStack.json';
 
 // Import Components
+import Nav from "../../components/Nav/Nav";
 import PortDeck from "../../components/PortDeck/PortDeck";
 
 // Import Images
@@ -27,7 +28,9 @@ const projectsIntro =
 
 const Home: React.FC = () => {
   return (
-    <div className="home">
+    <div className="home" id="top">
+      <Nav />
+
       <header className="hero">
         <div className="wrap hero-inner">
           <img
