@@ -23,8 +23,6 @@ import resumePDF from '../../assets/Travis-Resume.pdf';
 
 const skillGroups = Object.entries(resumeData.skills) as [string, string[]][];
 
-const projectsIntro =
-  "Small playable experiments from a games pipeline I run with AI agents; each is a few hundred lines, built in an afternoon. Tap one on your phone.";
 
 const Home: React.FC = () => {
   return (
