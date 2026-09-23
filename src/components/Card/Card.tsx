@@ -7,10 +7,19 @@ interface CardProps {
   url: string;
   github: string;
   software: string;
+  playable?: boolean;
 }
 
-function Card({ title, description, image, url, github, software }: CardProps) {
-  const isPlayable = url.startsWith("/demos/");
+function Card({
+  title,
+  description,
+  image,
+  url,
+  github,
+  software,
+  playable,
+}: CardProps) {
+  const isPlayable = playable ?? url.startsWith("/demos/");
 
   return (
     <article className="project-card">
@@ -24,7 +33,7 @@ function Card({ title, description, image, url, github, software }: CardProps) {
           <a
             href={url}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className="btn btn-solid-clay"
           >
             Visit
@@ -33,7 +42,7 @@ function Card({ title, description, image, url, github, software }: CardProps) {
             <a
               href={github}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className="btn btn-outline-clay"
             >
               GitHub
