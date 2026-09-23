@@ -2,14 +2,14 @@
   "name": "Travis Tincher",
   "position": "Senior Software Engineer — Ruby on Rails · full stack · AI agents",
   "tagline": "Rails backends, React frontends, and the AI agents that now help build both.",
-  "summary": "Full-stack engineer with over six years of experience building and maintaining Ruby on Rails servers and React TypeScript clients, with PostgreSQL behind most of it. Shipped 3rd party and LLM integrations into regulated workflows in mortgage, estate settlement, and healthcare. Spent the past year building and operating an orchestrator-worker agent harness with human-in-the-loop review gates, which is where most of my understanding of context engineering and agent verification comes from.",
+  "summary": "Full-stack engineer with over six years of experience building and maintaining Ruby on Rails servers and React TypeScript clients, backed by PostgreSQL. Shipped third-party and LLM integrations into regulated workflows in mortgage, estate settlement, and healthcare. Spent the past year architecting and operating an agent harness where I own the approach and scope for every task while agents handle implementation — 3,500+ tasks run, 640+ pull requests merged, with quality guardrails built in throughout.",
   "selectedWork": {
     "title": "Autonomous agent dev system",
     "period": "2025 – present",
     "bullets": [
-      "Built and operate a two-mode agent harness for shipping software. In live mode an orchestrator session plans the work, briefs parallel worker agents in isolated git worktrees, routes each task to the model tier it needs, and lands the results as a stacked set of pull requests with one human-in-the-loop review gate. In background mode a queue-driven runner executes one headless LLM session per task from a pinned checkout, so overnight and batch work runs as background agents.",
-      "Over twelve months of continuous operation it has run about 3,500 tasks and merged 640+ pull requests across multiple repos, most of them fully autonomously with human review at strategic gates, and a multiplayer game beta shipped through it.",
-      "Quality comes from checks the system runs on itself. I cut the test suites to a small budget per module after coverage chasing began eating a large portion of each agent run's capacity, and moved that weight onto a verification loop per task. Every task carries its own verify criteria that have to pass before its commit lands, agents are briefed to push back on a plan rather than agree with it, a second agent reviews changes adversarially before I do, and UI work is confirmed visually by an agent in a headed browser before I look. That shift has raised the quality of what reaches me more than anything else."
+      "Architected a two-mode agent harness: I define the approach and scope for each task, an orchestrator briefs parallel worker agents to implement it live, and a queue-driven runner executes queued tasks headlessly overnight.",
+      "Shipped a multiplayer game beta through the system, part of about 3,500 tasks and 640+ pull requests merged across multiple repos in twelve months.",
+      "Raised output quality by moving test coverage into a per-task verification loop, briefing agents to push back on plans, adding adversarial review by a second agent, and having an agent visually confirm UI work in a headed browser before my final UX validations."
     ]
   },
   "email": "tincher.travis@gmail.com",
@@ -24,7 +24,7 @@
       "endDate": "May 2025 · April 2026 – Present",
       "summary": [
         "Upgraded two consumer-facing legacy Rails applications from Ruby 2 / Rails 5 to Ruby 3 / Rails 7, adding test coverage, structured error logging, and documentation so the upgrades shipped without regressions.",
-        "Build and maintain NestJS / TypeScript services on PostgreSQL alongside the Rails work; CI/CD on GitHub Actions, AWS infrastructure via Terraform."
+        "Maintain NestJS / TypeScript services on PostgreSQL alongside the Rails work; GitHub Actions CI/CD, AWS via Terraform."
       ]
     },
     {
