@@ -8,6 +8,7 @@ interface CardProps {
   github: string;
   software: string;
   playable?: boolean;
+  tag?: string;
 }
 
 function Card({
@@ -18,14 +19,16 @@ function Card({
   github,
   software,
   playable,
+  tag,
 }: CardProps) {
   const isPlayable = playable ?? url.startsWith("/demos/");
+  const label = tag ?? (isPlayable ? "Playable" : undefined);
 
   return (
     <article className="project-card">
       <img src={image} alt={`${title} screenshot`} className="project-media" />
       <div className="project-body">
-        {isPlayable && <p className="project-tag">Playable</p>}
+        {label && <p className="project-tag">{label}</p>}
         <h3 className="project-title">{title}</h3>
         <p className="project-stack">{software}</p>
         <p className="project-desc">{description}</p>
