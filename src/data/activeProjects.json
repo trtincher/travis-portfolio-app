@@ -2,24 +2,24 @@
   {
     "title": "Tactical Grid",
     "description": "A 3D tactical battle grid built for the phone. Elevation and ramps, line of sight, area-of-effect shapes, and multi-tap moves and attacks.",
-    "image": "step.jpg",
-    "url": "/demos/step/",
+    "image": "tactical-grid.jpg",
+    "url": "/demos/tactical-grid/",
     "github": "",
     "software": "three.js · touch"
   },
   {
     "title": "Map Editor",
     "description": "Draw a battle map with glyphs, place the party, foes and objects, and export the encounter. System-free, so it works with any ruleset.",
-    "image": "loam.jpg",
-    "url": "/demos/loam/",
+    "image": "map-editor.jpg",
+    "url": "/demos/map-editor/",
     "github": "",
     "software": "three.js · map editor"
   },
   {
     "title": "Character Creator",
     "description": "A step-by-step character creation wizard that walks from intent to class, abilities and equipment, with a progress rail that shows how far along you are.",
-    "image": "summoning.jpg",
-    "url": "/demos/summoning/",
+    "image": "character-creator.jpg",
+    "url": "/demos/character-creator/",
     "github": "",
     "software": "vanilla JS"
   },

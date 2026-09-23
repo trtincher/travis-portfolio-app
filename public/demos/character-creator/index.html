@@ -650,7 +650,6 @@ function render(){
   /* --- body --- */
   $("main").innerHTML = isDone() ? sheetHTML()
     : `<h2>${st.t}</h2><div class="why">${st.w}</div>` + glossMore(st.id) + bodyFor(st.id);
-  if (isDone()) $("toEffigy").onclick = ()=> { location.href = handoffURL() };
   wire(st.id);
   $("main").scrollTop = 0;
 
@@ -885,26 +884,7 @@ function sheetHTML(){
   </div>
   <div class="why" style="margin-top:.9rem">That was ${plan().length-1} steps.
   A ${S.class==="fighter"?"caster would have been longer":"fighter would have been shorter"}.</div>
-  <button class="opt handoff" id="toEffigy">
-    <div class="t"><span>Open ${S.name} in the sheet →</span></div>
-    <div class="d">Where the numbers, the gear and everything else stay changeable.</div>
-  </button>`;
-}
-
-/* --------- the handoff ---------
-   Creation ends where editing begins. The character travels in the URL
-   rather than in storage so the link survives a reload and can be sent
-   to the phone as-is. */
-function handoffURL(){
-  const c = {
-    v:1, intent:S.intent, class:S.class, region:S.region, species:S.species,
-    background:S.background, name:S.name, assign:S.assign, build:S.build,
-    skills:S.skills, style:S.style, domain:S.domain,
-    cantrips:S.cantrips, spells:S.spells, elfCantrip:S.elfCantrip, kit:S.kit,
-  };
-  const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(c))))
-    .replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
-  return `../effigy/#c=${b64}`;
+  `;
 }
 
 /* ================================================================
