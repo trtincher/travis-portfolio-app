@@ -1,5 +1,14 @@
 [
   {
+    "title": "DnD Battle Arena",
+    "description": "A fight night for one: pick a crew of four, take two heats and a boss, walk the tent. Rules run on the same engine as the invite-only multiplayer beta.",
+    "image": "arena.jpg",
+    "url": "https://d2j9fcy8o8s0gx.cloudfront.net/",
+    "github": "",
+    "software": "vanilla JS · canvas · S3 + CloudFront",
+    "playable": true
+  },
+  {
     "title": "Tactical Grid",
     "description": "A 3D tactical battle grid built for the phone. Elevation and ramps, line of sight, area-of-effect shapes, and multi-tap moves and attacks.",
     "image": "tactical-grid.jpg",
