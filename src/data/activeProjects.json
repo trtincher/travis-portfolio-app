@@ -9,6 +9,33 @@
     "playable": true
   },
   {
+    "title": "Chart Queue",
+    "description": "A live claim board for a coding marketplace. Two tabs race for the same chart, a row lock (FOR UPDATE SKIP LOCKED) settles who wins, Turbo Streams keep every tab current, and a Sidekiq job releases claims that blow their SLA.",
+    "image": "queue.jpg",
+    "url": "https://demos.travis-tincher.com/queue",
+    "github": "https://github.com/trtincher/kode-stack-demos",
+    "software": "Rails 8 · Hotwire · PostgreSQL · Sidekiq",
+    "tag": "Live demo"
+  },
+  {
+    "title": "Review Workflow",
+    "description": "A coded chart moves draft → review → returned or approved on an aasm state machine. Reviewers edit codes inline in Turbo Frames, every change lands in a PaperTrail timeline, and keyboard shortcuts drive the review.",
+    "image": "review.jpg",
+    "url": "https://demos.travis-tincher.com/review",
+    "github": "https://github.com/trtincher/kode-stack-demos",
+    "software": "Rails 8 · Hotwire · aasm · PaperTrail",
+    "tag": "Live demo"
+  },
+  {
+    "title": "Coding Assistant + Evals",
+    "description": "A background job sends a synthetic encounter note to a model through one constrained tool and streams suggested codes back with confidence and the sentence each came from. An Evals tab re-runs a 30-case golden set against any prompt edit and shows the delta.",
+    "image": "assistant.jpg",
+    "url": "https://demos.travis-tincher.com/assistant",
+    "github": "https://github.com/trtincher/kode-stack-demos",
+    "software": "Rails 8 · Sidekiq · Turbo Streams · Claude API",
+    "tag": "Live demo"
+  },
+  {
     "title": "Tactical Grid",
     "description": "A 3D tactical battle grid built for the phone. Elevation and ramps, line of sight, area-of-effect shapes, and multi-tap moves and attacks.",
     "image": "tactical-grid.jpg",

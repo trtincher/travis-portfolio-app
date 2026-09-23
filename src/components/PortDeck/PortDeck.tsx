@@ -10,6 +10,7 @@ export interface Project {
   github: string;
   software: string;
   playable?: boolean;
+  tag?: string;
 }
 
 /**
@@ -40,6 +41,7 @@ function PortDeck() {
           github={project.github}
           software={project.software}
           playable={project.playable}
+          tag={project.tag}
         />
       ))}
     </div>
