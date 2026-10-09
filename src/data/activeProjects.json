@@ -1,14 +1,5 @@
 [
   {
-    "title": "DnD Battle Arena",
-    "description": "A fight night for one: pick a crew of four, take two heats and a boss, walk the tent. Rules run on the same engine as the invite-only multiplayer beta.",
-    "image": "arena.jpg",
-    "url": "https://d2j9fcy8o8s0gx.cloudfront.net/",
-    "github": "",
-    "software": "vanilla JS · canvas · S3 + CloudFront",
-    "playable": true
-  },
-  {
     "title": "Map Editor",
     "description": "Draw a battle map with glyphs, place the party, foes and objects, and export the encounter. System-free, so it works with any ruleset.",
     "image": "map-editor.jpg",
